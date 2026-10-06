@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <version>1</version>
+  <category title="Roma Club Matera"/>
+  <item drawable="rcm_telefono"/>
+  <item drawable="rcm_contatti"/>
+  <item drawable="rcm_messaggi"/>
+  <item drawable="rcm_fotocamera"/>
+  <item drawable="rcm_galleria"/>
+  <item drawable="rcm_impostazioni"/>
+  <item drawable="rcm_orologio"/>
+  <item drawable="rcm_calendario"/>
+  <item drawable="rcm_calcolatrice"/>
+  <item drawable="rcm_file"/>
+  <item drawable="rcm_browser"/>
+  <item drawable="rcm_posta"/>
+  <item drawable="rcm_store"/>
+  <item drawable="rcm_galaxy_store"/>
+  <item drawable="rcm_mappe"/>
+  <item drawable="rcm_video"/>
+  <item drawable="rcm_cerca"/>
+  <item drawable="rcm_meteo"/>
+  <item drawable="rcm_note"/>
+  <item drawable="rcm_registratore"/>
+  <item drawable="rcm_cloud"/>
+  <item drawable="rcm_chat"/>
+  <item drawable="rcm_invia"/>
+  <item drawable="rcm_foto_social"/>
+  <item drawable="rcm_gruppi"/>
+  <item drawable="rcm_forum"/>
+  <item drawable="rcm_musica_video"/>
+  <item drawable="rcm_cuffie"/>
+  <item drawable="rcm_musica"/>
+  <item drawable="rcm_film"/>
+  <item drawable="rcm_cancelletto"/>
+  <item drawable="rcm_calcio"/>
+  <item drawable="rcm_carrello"/>
+  <item drawable="rcm_carta"/>
+  <item drawable="rcm_banca"/>
+  <item drawable="rcm_documento"/>
+  <item drawable="rcm_portafoglio"/>
+  <item drawable="rcm_salute"/>
+  <item drawable="rcm_traduttore"/>
+  <item drawable="rcm_casa"/>
+  <item drawable="rcm_treno"/>
+  <item drawable="rcm_auto"/>
+  <item drawable="rcm_stemma"/>
+</resources>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string-array name="icon_pack" translatable="false">
+    <item>rcm_telefono</item>
+    <item>rcm_contatti</item>
+    <item>rcm_messaggi</item>
+    <item>rcm_fotocamera</item>
+    <item>rcm_galleria</item>
+    <item>rcm_impostazioni</item>
+    <item>rcm_orologio</item>
+    <item>rcm_calendario</item>
+    <item>rcm_calcolatrice</item>
+    <item>rcm_file</item>
+    <item>rcm_browser</item>
+    <item>rcm_posta</item>
+    <item>rcm_store</item>
+    <item>rcm_galaxy_store</item>
+    <item>rcm_mappe</item>
+    <item>rcm_video</item>
+    <item>rcm_cerca</item>
+    <item>rcm_meteo</item>
+    <item>rcm_note</item>
+    <item>rcm_registratore</item>
+    <item>rcm_cloud</item>
+    <item>rcm_chat</item>
+    <item>rcm_invia</item>
+    <item>rcm_foto_social</item>
+    <item>rcm_gruppi</item>
+    <item>rcm_forum</item>
+    <item>rcm_musica_video</item>
+    <item>rcm_cuffie</item>
+    <item>rcm_musica</item>
+    <item>rcm_film</item>
+    <item>rcm_cancelletto</item>
+    <item>rcm_calcio</item>
+    <item>rcm_carrello</item>
+    <item>rcm_carta</item>
+    <item>rcm_banca</item>
+    <item>rcm_documento</item>
+    <item>rcm_portafoglio</item>
+    <item>rcm_salute</item>
+    <item>rcm_traduttore</item>
+    <item>rcm_casa</item>
+    <item>rcm_treno</item>
+    <item>rcm_auto</item>
+    <item>rcm_stemma</item>
+  </string-array>
+</resources>

@@ -1,0 +1,74 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.SET_WALLPAPER" />
+
+    <!-- Android 11+: per sapere quali launcher sono installati -->
+    <queries>
+        <package android:name="com.teslacoilsw.launcher" />
+        <package android:name="app.lawnchair" />
+        <package android:name="app.lawnchair.play" />
+        <package android:name="ginlemon.flowerfree" />
+        <package android:name="ginlemon.flowerpro" />
+        <package android:name="com.actionlauncher.playstore" />
+        <package android:name="com.samsung.android.themedesigner" />
+        <package android:name="com.samsung.android.goodlock" />
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+    </queries>
+
+    <application
+        android:label="Tema RCM"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- Cosi' i launcher riconoscono l'app come icon pack -->
+            <intent-filter>
+                <action android:name="org.adw.launcher.THEMES" />
+                <action android:name="com.gau.go.launcherex.theme" />
+                <action android:name="com.novalauncher.THEME" />
+                <action android:name="com.anddoes.launcher.THEME" />
+                <action android:name="com.teslacoilsw.launcher.THEME" />
+                <action android:name="ginlemon.smartlauncher.THEMES" />
+                <action android:name="com.dlto.atom.launcher.THEME" />
+                <action android:name="net.oneplus.launcher.icons.ACTION_PICK_ICON" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="com.fede.launcher.THEME_ICONPACK" />
+                <category android:name="com.anddoes.launcher.THEME" />
+                <category android:name="com.teslacoilsw.launcher.THEME" />
+                <category android:name="com.novalauncher.category.CUSTOM_ICON_PICKER" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+    </queries>
+</manifest>

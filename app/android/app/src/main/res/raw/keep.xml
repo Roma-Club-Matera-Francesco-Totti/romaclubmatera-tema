@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- I launcher cercano le icone per nome (appfilter.xml): senza questo il
+     resource shrinking le crede inutili e le toglie dall'APK. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/rcm_*,@xml/appfilter,@xml/drawable,@array/icon_pack" />
