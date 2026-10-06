@@ -1,5 +1,7 @@
 # Tema del Roma Club Matera «Francesco Totti»
 
+[romaclubmatera.it](https://romaclubmatera.it)
+
 App Android **Tema RCM** (`it.romaclubmatera.tema`) con gli sfondi e le icone
 del Club, e i generatori da cui escono.
 
@@ -26,5 +28,10 @@ La firma è la stessa delle altre app del Club: `app/android/key.properties`
 di debug e **non va distribuito**: chi lo installa non potrebbe più
 aggiornarlo con quello vero.
 
-Caratteri: Cinzel e Oswald, licenza SIL OFL (testi in `app/assets/caratteri/`).
+## Licenza
+
+Codice **Apache 2.0**, grafica **CC BY 4.0**; stemma e nome del Club esclusi.
+Ogni copia o modifica deve riportare il riferimento **«romaclubmatera.it»**.
+Tutti i dettagli, e i componenti di terzi, in [LICENZA.md](LICENZA.md).
+
 Niente marchi dell'AS Roma né volti di giocatori.
