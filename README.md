@@ -22,6 +22,11 @@ del Club, e i generatori da cui escono.
   app (cornice per quelle non in elenco), orologio, preferite, dock e cassetto
   con ricerca. Niente widget ne' pallini delle notifiche.
 
+- `portfolio/genera.py` — il portfolio per la candidatura a designer di
+  Galaxy Themes (Samsung): 3 temi (Giallorosso, Notte, Matera) × 6 schermate
+  in un PDF A4. Da confrontare con lo Starter Kit di Samsung quando aprono
+  le candidature.
+
 ## Compilare
 
     ORIGINALI=<cartella delle illustrazioni> ./prepara.sh
