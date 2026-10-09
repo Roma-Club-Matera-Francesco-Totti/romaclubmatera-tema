@@ -21,8 +21,11 @@ del Club, e i generatori da cui escono.
   un launcher. Chi la sceglie come app Home ha le icone del Club su tutte le
   app (cornice per quelle non in elenco), pagine a griglia 4x6, cartelle,
   widget delle altre app (AppWidgetHost, mostrati come viste native), dock e
-  cassetto con ricerca; si sposta tutto tenendo premuto. Ancora niente
-  scorciatoie ne' pallini delle notifiche. Nella versione pubblica e' spenta:
+  cassetto con ricerca; si sposta tutto tenendo premuto. Tenendo premuta
+  un'app compaiono le sue scorciatoie; i pallini delle notifiche arrivano
+  da `Notifiche.kt` se l'utente concede l'accesso alle notifiche (solo quali
+  app, mai il contenuto). Le app senza icona del Club hanno la loro icona
+  ritagliata nella cornice, come `personale/cornice.py`. Nella versione pubblica e' spenta:
   si accende costruendo con
   `--dart-define=HOME_RCM=true -PhomeRcm=true`.
 

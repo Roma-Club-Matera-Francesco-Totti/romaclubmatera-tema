@@ -25,6 +25,9 @@ void avviaHome() {
   runApp(const HomeRcm());
 }
 
+/// Le app (pacchetti) con notifiche da leggere: il pallino sull'icona.
+final _pallini = ValueNotifier<Set<String>>({});
+
 /// La griglia di ogni pagina e i posti del dock.
 const _colonne = 4, _righe = 6, _postiDock = 5;
 
@@ -117,6 +120,11 @@ class _Nativo {
       _anteprime.putIfAbsent(p, () => c.invokeMethod<Uint8List>('anteprimaWidget', {'provider': p}));
   static Future<int?> aggiungiWidget(String p) => c.invokeMethod<int>('aggiungiWidget', {'provider': p});
   static Future<void> rimuoviWidget(int id) => c.invokeMethod('rimuoviWidget', {'id': id});
+  static Future<List<Map>> scorciatoie(App a) async =>
+      await c.invokeListMethod<Map>('scorciatoie', {'pacchetto': a.pacchetto, 'attivita': a.attivita}) ?? [];
+  static Future<void> avviaScorciatoia(App a, String id) =>
+      c.invokeMethod('avviaScorciatoia', {'pacchetto': a.pacchetto, 'id': id});
+  static Future<Map?> pallini() => c.invokeMapMethod('pallini');
   static Future<void> pulisciWidget(List<int> usati) => c.invokeMethod('pulisciWidget', {'usati': usati});
 }
 
@@ -190,6 +198,7 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
   List<List<Voce>> pagine = [[]];
   List<Voce> dock = [];
   bool pronta = false;
+  bool permessoPallini = true;
   int pagina = 0;
   final pc = PageController();
   late final cass = AnimationController(vsync: this, duration: const Duration(milliseconds: 260));
@@ -202,7 +211,10 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _Nativo.c.setMethodCallHandler((call) async {
-      if (call.method == 'cambiate') {
+      if (call.method == 'pallini') {
+        _pallini.value = Set<String>.from(call.arguments);
+        permessoPallini = true;
+      } else if (call.method == 'cambiate') {
         _Nativo.dimentica();
         await carica();
       } else if (call.method == 'home') {
@@ -244,6 +256,11 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
       dock = [for (final v in m['dock']) Voce.da(v)];
     } else {
       await iniziale(app);
+    }
+    final p = await _Nativo.pallini();
+    if (p != null) {
+      permessoPallini = p['permesso'] == true;
+      _pallini.value = Set<String>.from(p['app'] ?? []);
     }
     _Nativo.pulisciWidget([
       for (final v in [...pagine.expand((p) => p), ...dock]) ?v.id,
@@ -458,7 +475,12 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
 
   // ---------- menu ----------
 
-  Future<void> foglio(Widget? testa, List<(IconData, String, VoidCallback)> voci) => showModalBottomSheet(
+  Future<void> foglio(
+    Widget? testa,
+    List<(IconData, String, VoidCallback)> voci, {
+    List<Map> scorciatoie = const [],
+    App? di,
+  }) => showModalBottomSheet(
     context: context,
     backgroundColor: Stile.superficie,
     builder: (ctx) => SafeArea(
@@ -469,6 +491,20 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
             Padding(padding: const EdgeInsets.fromLTRB(20, 18, 20, 8), child: testa)
           else
             const SizedBox(height: 8),
+          for (final sc in scorciatoie)
+            ListTile(
+              leading: SizedBox(
+                width: 28,
+                height: 28,
+                child: sc['icona'] == null ? const Icon(Icons.bolt, color: Stile.oro) : Image.memory(sc['icona']),
+              ),
+              title: Text(sc['nome'] ?? '', style: Stile.testo(16)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _Nativo.avviaScorciatoia(di!, sc['id']);
+              },
+            ),
+          if (scorciatoie.isNotEmpty) Divider(color: Stile.oro.withValues(alpha: .3), indent: 16, endIndent: 16),
           for (final (i, t, f) in voci)
             ListTile(
               leading: Icon(i, color: Stile.oro),
@@ -499,21 +535,28 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
       case 'app':
         final a = perChiave[v.app];
         if (a == null) return;
-        await foglio(testaApp(a), [
-          if (da == 'cassetto')
-            (
-              Icons.add_circle_outline,
-              'Aggiungi alla Home',
-              () {
-                setState(() => metti(Voce('app', app: a.chiave), da: pagina));
-                salva();
-              },
-            )
-          else
-            (Icons.remove_circle_outline, 'Togli dalla Home', () => togli(v)),
-          (Icons.info_outline, 'Informazioni app', () => _Nativo.info(a)),
-          (Icons.delete_outline, 'Disinstalla', () => _Nativo.disinstalla(a)),
-        ]);
+        final sc = await _Nativo.scorciatoie(a);
+        if (!mounted) return;
+        await foglio(
+          testaApp(a),
+          [
+            if (da == 'cassetto')
+              (
+                Icons.add_circle_outline,
+                'Aggiungi alla Home',
+                () {
+                  setState(() => metti(Voce('app', app: a.chiave), da: pagina));
+                  salva();
+                },
+              )
+            else
+              (Icons.remove_circle_outline, 'Togli dalla Home', () => togli(v)),
+            (Icons.info_outline, 'Informazioni app', () => _Nativo.info(a)),
+            (Icons.delete_outline, 'Disinstalla', () => _Nativo.disinstalla(a)),
+          ],
+          scorciatoie: sc,
+          di: a,
+        );
       case 'cartella':
         await foglio(Text(v.nome, style: Stile.titolo(17)), [
           (Icons.folder_open, 'Apri e rinomina', () => apriCartella(v)),
@@ -539,6 +582,12 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
           setState(() => metti(Voce('orologio', w: _colonne, h: 2), da: pagina));
           salva();
         },
+      ),
+    if (!permessoPallini)
+      (
+        Icons.circle_notifications_outlined,
+        'Pallini delle notifiche (attiva «Home RCM»)',
+        () => _Nativo.c.invokeMethod('permessoPallini'),
       ),
     (Icons.wallpaper, 'Sfondi del Club (Tema RCM)', () => _Nativo.c.invokeMethod('temaRcm')),
     (Icons.photo_library_outlined, 'Cambia sfondo (anche una tua foto)', () => _Nativo.c.invokeMethod('sfondoTuo')),
@@ -630,33 +679,43 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
                       onTap: () => Navigator.pop(ctx, w),
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                        child: Row(children: [
-                          SizedBox(
-                            width: 130,
-                            height: 110,
-                            child: FutureBuilder(
-                              future: _Nativo.anteprima(w['provider']),
-                              builder: (_, s) =>
-                                  s.data == null ? const SizedBox() : Image.memory(s.data!, fit: BoxFit.contain),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 130,
+                              height: 110,
+                              child: FutureBuilder(
+                                future: _Nativo.anteprima(w['provider']),
+                                builder: (_, s) =>
+                                    s.data == null ? const SizedBox() : Image.memory(s.data!, fit: BoxFit.contain),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text(w['nome'] ?? '', style: Stile.testo(15)),
-                              // stesso nome per stili diversi (il meteo Samsung): dice quale
-                              if (perApp[a]!.where((o) => o['nome'] == w['nome']).length > 1)
-                                Text(_stile(w['classe'] ?? ''), style: Stile.testo(12, colore: Stile.panna.withValues(alpha: .8))),
-                              if ((w['descrizione'] ?? '').isNotEmpty)
-                                Text(w['descrizione'],
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Stile.testo(12, colore: Stile.panna.withValues(alpha: .6))),
-                              const SizedBox(height: 4),
-                              Text('${celle(w).$1} × ${celle(w).$2}', style: Stile.testo(12, colore: Stile.oro)),
-                            ]),
-                          ),
-                        ]),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(w['nome'] ?? '', style: Stile.testo(15)),
+                                  // stesso nome per stili diversi (il meteo Samsung): dice quale
+                                  if (perApp[a]!.where((o) => o['nome'] == w['nome']).length > 1)
+                                    Text(
+                                      _stile(w['classe'] ?? ''),
+                                      style: Stile.testo(12, colore: Stile.panna.withValues(alpha: .8)),
+                                    ),
+                                  if ((w['descrizione'] ?? '').isNotEmpty)
+                                    Text(
+                                      w['descrizione'],
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Stile.testo(12, colore: Stile.panna.withValues(alpha: .6)),
+                                    ),
+                                  const SizedBox(height: 4),
+                                  Text('${celle(w).$1} × ${celle(w).$2}', style: Stile.testo(12, colore: Stile.oro)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                 ],
@@ -1126,7 +1185,17 @@ class _Lancio extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(width: _lato, height: _lato, child: _Icona(a)),
+        SizedBox(
+          width: _lato,
+          height: _lato,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(child: _Icona(a)),
+              Positioned(right: 0, top: 0, child: _Pallino({a.pacchetto})),
+            ],
+          ),
+        ),
         if (etichetta) ...[
           const SizedBox(height: 5),
           SizedBox(
@@ -1145,6 +1214,28 @@ class _Lancio extends StatelessWidget {
   }
 }
 
+/// Il pallino oro: una di queste app ha notifiche da leggere.
+class _Pallino extends StatelessWidget {
+  const _Pallino(this.pacchetti);
+  final Set<String> pacchetti;
+
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder(
+    valueListenable: _pallini,
+    builder: (_, p, _) => !pacchetti.any(p.contains)
+        ? const SizedBox()
+        : Container(
+            width: 14,
+            height: 14,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Stile.oro,
+              border: Border.all(color: const Color(0xFF5A0F19), width: 2),
+            ),
+          ),
+  );
+}
+
 /// La cartella sulla Home: tondo scuro con bordo oro e le prime quattro app.
 class _IconaCartella extends StatelessWidget {
   const _IconaCartella(this.c, this.perChiave, {this.etichetta = true});
@@ -1158,25 +1249,33 @@ class _IconaCartella extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: _lato,
-          height: _lato,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xCC3A0B13),
-            border: Border.all(color: Stile.oro, width: 1.6),
-          ),
-          // le prime quattro app in un quadrato 2x2 al centro del tondo
-          child: Center(
-            child: SizedBox(
-              width: _lato * .66,
-              child: Wrap(
-                spacing: 2,
-                runSpacing: 2,
-                children: [for (final a in app) SizedBox(width: _lato * .31, height: _lato * .31, child: _Icona(a))],
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: _lato,
+              height: _lato,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xCC3A0B13),
+                border: Border.all(color: Stile.oro, width: 1.6),
+              ),
+              // le prime quattro app in un quadrato 2x2 al centro del tondo
+              child: Center(
+                child: SizedBox(
+                  width: _lato * .66,
+                  child: Wrap(
+                    spacing: 2,
+                    runSpacing: 2,
+                    children: [
+                      for (final a in app) SizedBox(width: _lato * .31, height: _lato * .31, child: _Icona(a)),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
+            Positioned(right: 0, top: 0, child: _Pallino({for (final k in c.apps) k.split('/').first})),
+          ],
         ),
         if (etichetta) ...[
           const SizedBox(height: 5),

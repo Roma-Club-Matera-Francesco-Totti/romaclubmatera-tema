@@ -95,6 +95,17 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+        <!-- pallini delle notifiche della Home RCM (solo quali app, mai il contenuto) -->
+        <service
+            android:name=".Notifiche"
+            android:enabled="${homeRcm}"
+            android:exported="true"
+            android:label="Home RCM: pallini delle notifiche"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

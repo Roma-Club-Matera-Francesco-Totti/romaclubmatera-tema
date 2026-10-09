@@ -38,7 +38,7 @@ import kotlin.concurrent.thread
  * La Home del Club: un launcher vero (categoria HOME), disegnato in Flutter
  * (entrypoint "home" in lib/home.dart) sopra lo sfondo del telefono.
  * Le icone sono quelle del tema: dal pacchetto se l'app e' in appfilter.xml,
- * altrimenti l'icona originale dentro la cornice (come fanno Nova & co.).
+ * altrimenti l'icona originale ritagliata dentro la cornice del Club.
  * I widget delle altre app vivono qui (AppWidgetHost) e Flutter li mostra
  * come viste native "rcm/widget".
  */
@@ -49,7 +49,6 @@ class HomeActivity : FlutterActivity() {
 
     // componente "pacchetto/attivita'" -> nome del drawable del tema
     private val filtro: Map<String, String> by lazy { leggiFiltro() }
-    private var scala = 0.62f
 
     private val awm by lazy { AppWidgetManager.getInstance(this) }
     private val host by lazy { AppWidgetHost(applicationContext, HOST_ID) }
@@ -103,6 +102,36 @@ class HomeActivity : FlutterActivity() {
                 }
                 "disinstalla" -> {
                     startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:" + call.argument<String>("pacchetto"))))
+                    result.success(true)
+                }
+                // le scorciatoie dell'app (tieni premuto): solo il launcher predefinito le vede
+                "scorciatoie" -> thread {
+                    val lista = try {
+                        val q = LauncherApps.ShortcutQuery().setPackage(call.argument<String>("pacchetto"))
+                            .setActivity(ComponentName(call.argument<String>("pacchetto")!!, call.argument<String>("attivita")!!))
+                            .setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC or
+                                LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST or LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
+                        (la.getShortcuts(q, Process.myUserHandle()) ?: emptyList())
+                            .filter { it.isEnabled }
+                            .sortedWith(compareBy({ !it.isDeclaredInManifest }, { it.rank }))
+                            .take(5)
+                            .map { sc ->
+                                mapOf("id" to sc.id, "nome" to (sc.shortLabel ?: sc.longLabel ?: "").toString(),
+                                    "icona" to la.getShortcutIconDrawable(sc, resources.displayMetrics.densityDpi)?.let { png(it, 96) })
+                            }
+                    } catch (e: Exception) { emptyList() }
+                    runOnUiThread { result.success(lista) }
+                }
+                "avviaScorciatoia" -> {
+                    try {
+                        la.startShortcut(call.argument<String>("pacchetto")!!, call.argument<String>("id")!!, null, null, Process.myUserHandle())
+                        result.success(true)
+                    } catch (e: Exception) { result.success(false) }
+                }
+                // pallini: quali app hanno notifiche (solo i nomi dei pacchetti, mai il contenuto)
+                "pallini" -> result.success(mapOf("permesso" to Notifiche.permesso(this), "app" to Notifiche.ultime.toList()))
+                "permessoPallini" -> {
+                    startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
                     result.success(true)
                 }
                 "sceltaHome" -> { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)); result.success(true) }
@@ -316,7 +345,6 @@ class HomeActivity : FlutterActivity() {
                     m["$p/${if (a.startsWith(".")) p + a else a}"] = d
                     m.putIfAbsent("$p/*", d) // stessa app con un'attivita' diversa
                 }
-                "scale" -> x.getAttributeValue(null, "factor")?.toFloatOrNull()?.let { scala = it }
             }
         }
         return m
@@ -336,14 +364,48 @@ class HomeActivity : FlutterActivity() {
         if (tema != null) {
             tema.setBounds(0, 0, lato, lato); tema.draw(tela)
         } else {
-            drawable("rcm_cornice")?.let { it.setBounds(0, 0, lato, lato); it.draw(tela) }
             val orig = la.getActivityList(c.packageName, Process.myUserHandle())
-                .firstOrNull { it.componentName == c }?.getBadgedIcon(0)
+                .firstOrNull { it.componentName == c }?.getIcon(0)
                 ?: packageManager.getApplicationIcon(c.packageName)
-            val l = (lato * scala).toInt(); val o = (lato - l) / 2
-            orig.setBounds(o, o, o + l, o + l); orig.draw(tela)
+            cornice(tela, lato.toFloat(), orig)
         }
         return ByteArrayOutputStream().also { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
+    }
+
+    /**
+     * Come personale/cornice.py: tondo rosso sfumato, l'icona originale
+     * ritagliata a cerchio, filetto oro. Le icone adattive si disegnano a
+     * strati, senza la forma del telefono: niente quadrati bianchi attorno.
+     */
+    private fun cornice(tela: Canvas, l: Float, orig: Drawable) {
+        val c = l / 2
+        val u = l / 192 // misure pensate su 192 px
+        val r = 92 / 96f * c
+        val fondo = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            shader = android.graphics.RadialGradient(c, .76f * c, 1.4f * c,
+                Color.rgb(0xa8, 0x22, 0x34), Color.rgb(0x5a, 0x0f, 0x19), android.graphics.Shader.TileMode.CLAMP)
+        }
+        tela.drawCircle(c, c, r, fondo)
+        val ri = 72 / 96f * c
+        val n = tela.save()
+        tela.clipPath(android.graphics.Path().apply { addCircle(c, c, ri, android.graphics.Path.Direction.CW) })
+        if (orig is android.graphics.drawable.AdaptiveIconDrawable) {
+            // la parte visibile di un'icona adattiva e' i 2/3 centrali
+            val m = (ri * 1.5f).toInt()
+            for (s in listOf(orig.background, orig.foreground)) {
+                s?.setBounds((c - m).toInt(), (c - m).toInt(), (c + m).toInt(), (c + m).toInt()); s?.draw(tela)
+            }
+        } else {
+            tela.drawColor(Color.rgb(0xf6, 0xec, 0xd0)) // icone trasparenti: fondo panna
+            orig.setBounds((c - ri).toInt(), (c - ri).toInt(), (c + ri).toInt(), (c + ri).toInt()); orig.draw(tela)
+        }
+        tela.restoreToCount(n)
+        val rr = 78 / 96f * c
+        for ((w, col) in listOf(5.5f to Color.rgb(0xb8, 0x86, 0x1a), 3.5f to Color.rgb(0xe3, 0xad, 0x1e), 1.2f to Color.rgb(0xf6, 0xcf, 0x5a))) {
+            tela.drawCircle(c, c, rr, android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                style = android.graphics.Paint.Style.STROKE; strokeWidth = w * u; color = col
+            })
+        }
     }
 
     private fun png(d: Drawable, max: Int): ByteArray {
