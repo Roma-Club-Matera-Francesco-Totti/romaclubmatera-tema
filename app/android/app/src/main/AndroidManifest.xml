@@ -16,6 +16,11 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.HOME" />
         </intent>
+        <!-- la Home RCM deve vedere tutte le app avviabili -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
     </queries>
 
     <application
@@ -58,6 +63,29 @@
                 <category android:name="com.anddoes.launcher.THEME" />
                 <category android:name="com.teslacoilsw.launcher.THEME" />
                 <category android:name="com.novalauncher.category.CUSTOM_ICON_PICKER" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <!-- La Home del Club: launcher vero, si sceglie in Impostazioni ›
+             App predefinite › App Home. Disegnata sopra lo sfondo del telefono. -->
+        <activity
+            android:name=".HomeActivity"
+            android:exported="true"
+            android:label="Home RCM"
+            android:launchMode="singleTask"
+            android:stateNotNeeded="true"
+            android:excludeFromRecents="true"
+            android:clearTaskOnLaunch="true"
+            android:resumeWhilePausing="true"
+            android:taskAffinity="it.romaclubmatera.tema.home"
+            android:theme="@style/HomeTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>

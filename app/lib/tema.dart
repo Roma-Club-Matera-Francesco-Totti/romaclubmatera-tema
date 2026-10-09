@@ -20,6 +20,9 @@ class Tema {
   static Future<bool> applica(String pacchetto) async =>
       await _c.invokeMethod<bool>('applica', {'pacchetto': pacchetto}) ?? false;
 
+  /// Impostazioni › App Home: scegliere (o lasciare) la Home RCM.
+  static Future<void> sceltaHome() => _c.invokeMethod('sceltaHome');
+
   static Future<bool> apri(String url) async => await _c.invokeMethod<bool>('apri', {'url': url}) ?? false;
 }
 

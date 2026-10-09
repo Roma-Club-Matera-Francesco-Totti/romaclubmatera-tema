@@ -15,8 +15,12 @@ del Club, e i generatori da cui escono.
 - `prepara.sh` — rigenera icone, icona dell'app, sfondi (WebP) e caratteri
   dentro `app/`.
 - `app/` — l'app Flutter: Sfondi (Home, Blocco, Entrambe), Icone, Applica
-  (Nova, Smart Launcher, Action Launcher con un tocco; Lawnchair e Samsung
-  Theme Park con le istruzioni).
+  (Nova, Smart Launcher, Action Launcher con un tocco; Lawnchair con le
+  istruzioni; Samsung Theme Park guidato passo per passo).
+- **Home RCM** (`HomeActivity.kt` + `lib/home.dart`): la stessa app e' anche
+  un launcher. Chi la sceglie come app Home ha le icone del Club su tutte le
+  app (cornice per quelle non in elenco), orologio, preferite, dock e cassetto
+  con ricerca. Niente widget ne' pallini delle notifiche.
 
 ## Compilare
 

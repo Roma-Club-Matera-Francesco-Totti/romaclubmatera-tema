@@ -57,6 +57,30 @@ class _PaginaApplicaState extends State<PaginaApplica> with WidgetsBindingObserv
     }
   }
 
+  /// La Home RCM (HomeActivity.kt): un launcher nostro, le icone del Club su
+  /// tutte le app senza Theme Park ne' launcher da installare.
+  Widget _homeRcm(bool attiva) => _Scheda(
+        titolo: 'La Home del Club',
+        icona: Icons.home,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(
+              attiva
+                  ? 'La Home RCM è la tua Home: tutte le app hanno le icone del Club. '
+                      'Per tornare alla Home di prima scegli un\'altra app Home.'
+                  : 'Il modo più semplice: usa la Home del Club al posto di quella del telefono. Tutte le app '
+                      'prendono le icone del Club, su qualunque telefono, senza installare altro.',
+              style: Stile.testo(15)),
+          const SizedBox(height: 8),
+          Text('Ci sono orologio, app preferite, dock e cassetto con la ricerca; tieni premuta un\'app per '
+              'aggiungerla alla Home o al dock. Non ci sono i widget né i pallini delle notifiche. '
+              'Si torna indietro quando vuoi da Impostazioni › App › App predefinite › App Home.',
+              style: Stile.sotto(13)),
+          const SizedBox(height: 12),
+          Pulsante(attiva ? 'Cambia app Home' : 'Usa la Home RCM',
+              pieno: !attiva, icona: Icons.home_outlined, onPressed: Tema.sceltaHome),
+        ]),
+      );
+
   /// Samsung: le icone passano da Theme Park (Good Lock). L'app guarda cosa
   /// c'e' gia' e il pulsante porta al passo successivo; i passi sono quelli
   /// provati su un Galaxy S25 con One UI 9 (09/10/2026), Theme Park e' in inglese.
@@ -108,6 +132,7 @@ class _PaginaApplicaState extends State<PaginaApplica> with WidgetsBindingObserv
                 'Su Android 12 e successivi anche menu e pulsanti prendono i colori giallorossi.',
                 style: Stile.testo(15)),
           ),
+          _homeRcm(s.data!.predefinito == 'it.romaclubmatera.tema'),
           for (final p in launcher)
             _Scheda(
               titolo: _nomi[p]!,

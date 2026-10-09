@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'applica.dart';
+import 'home.dart';
 import 'icone.dart';
 import 'sfondi.dart';
 import 'stile.dart';
 import 'tema.dart';
+
+/// La Home RCM (HomeActivity.kt la avvia per nome, da questa libreria).
+@pragma('vm:entry-point')
+void home() => avviaHome();
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
