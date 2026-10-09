@@ -23,6 +23,8 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Home RCM accesa solo con -PhomeRcm=true (e --dart-define=HOME_RCM=true)
+        manifestPlaceholders["homeRcm"] = (project.findProperty("homeRcm") ?: "false").toString()
     }
 
     // Stessa chiave delle altre app del Club. key.properties (ignorato da git)

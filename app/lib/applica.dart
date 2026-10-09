@@ -5,7 +5,7 @@ import 'tema.dart';
 
 /// La Home RCM resta nascosta finche' non ha cartelle e widget (vedi il
 /// manifest, HomeActivity enabled=false).
-const homeRcmPronta = false;
+const homeRcmPronta = bool.fromEnvironment('HOME_RCM');
 
 const _nomi = {
   'com.teslacoilsw.launcher': 'Nova Launcher',

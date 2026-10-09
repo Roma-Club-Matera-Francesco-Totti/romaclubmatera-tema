@@ -19,8 +19,12 @@ del Club, e i generatori da cui escono.
   istruzioni; Samsung Theme Park guidato passo per passo).
 - **Home RCM** (`HomeActivity.kt` + `lib/home.dart`): la stessa app e' anche
   un launcher. Chi la sceglie come app Home ha le icone del Club su tutte le
-  app (cornice per quelle non in elenco), orologio, preferite, dock e cassetto
-  con ricerca. Niente widget ne' pallini delle notifiche.
+  app (cornice per quelle non in elenco), pagine a griglia 4x6, cartelle,
+  widget delle altre app (AppWidgetHost, mostrati come viste native), dock e
+  cassetto con ricerca; si sposta tutto tenendo premuto. Ancora niente
+  scorciatoie ne' pallini delle notifiche. Nella versione pubblica e' spenta:
+  si accende costruendo con
+  `--dart-define=HOME_RCM=true -PhomeRcm=true`.
 
 - `portfolio/genera.py` — il portfolio per la candidatura a designer di
   Galaxy Themes (Samsung): 3 temi (Giallorosso, Notte, Matera) × 6 schermate

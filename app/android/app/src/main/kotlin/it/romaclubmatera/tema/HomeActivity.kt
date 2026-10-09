@@ -1,21 +1,35 @@
 package it.romaclubmatera.tema
 
+import android.appwidget.AppWidgetHost
+import android.appwidget.AppWidgetHostView
+import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProviderInfo
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.LauncherApps
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Process
 import android.os.UserHandle
 import android.provider.Settings
+import android.view.Gravity
+import android.view.View
+import android.widget.FrameLayout
+import android.widget.RemoteViews
+import android.widget.TextView
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.android.FlutterActivityLaunchConfigs.BackgroundMode
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.StandardMessageCodec
+import io.flutter.plugin.platform.PlatformView
+import io.flutter.plugin.platform.PlatformViewFactory
 import org.xmlpull.v1.XmlPullParser
 import java.io.ByteArrayOutputStream
 import kotlin.concurrent.thread
@@ -25,6 +39,8 @@ import kotlin.concurrent.thread
  * (entrypoint "home" in lib/home.dart) sopra lo sfondo del telefono.
  * Le icone sono quelle del tema: dal pacchetto se l'app e' in appfilter.xml,
  * altrimenti l'icona originale dentro la cornice (come fanno Nova & co.).
+ * I widget delle altre app vivono qui (AppWidgetHost) e Flutter li mostra
+ * come viste native "rcm/widget".
  */
 class HomeActivity : FlutterActivity() {
 
@@ -34,6 +50,12 @@ class HomeActivity : FlutterActivity() {
     // componente "pacchetto/attivita'" -> nome del drawable del tema
     private val filtro: Map<String, String> by lazy { leggiFiltro() }
     private var scala = 0.62f
+
+    private val awm by lazy { AppWidgetManager.getInstance(this) }
+    private val host by lazy { AppWidgetHost(applicationContext, HOST_ID) }
+    // il widget che si sta aggiungendo: aspetta il permesso e la configurazione
+    private var inAttesa: MethodChannel.Result? = null
+    private var widgetInAttesa = 0
 
     private val avvisi = object : LauncherApps.Callback() {
         private fun cambiate() = runOnUiThread { canale.invokeMethod("cambiate", null) }
@@ -49,6 +71,7 @@ class HomeActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        flutterEngine.platformViewsController.registry.registerViewFactory("rcm/widget", Fabbrica())
         canale = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "rcm/home")
         canale.setMethodCallHandler { call, result ->
             when (call.method) {
@@ -95,6 +118,43 @@ class HomeActivity : FlutterActivity() {
                         .putString(call.argument<String>("chiave"), call.argument<String>("valore")).apply()
                     result.success(true)
                 }
+                "widgetDisponibili" -> thread {
+                    val d = resources.displayMetrics.density
+                    // solo quelli per la Home (non schermo esterno o schermata di blocco)
+                    val lista = awm.getInstalledProvidersForProfile(Process.myUserHandle())
+                        .filter { it.widgetCategory and AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN != 0 }
+                        .map { i ->
+                        val app = try {
+                            packageManager.getApplicationLabel(packageManager.getApplicationInfo(i.provider.packageName, 0)).toString()
+                        } catch (e: Exception) { i.provider.packageName }
+                        val descrizione = if (Build.VERSION.SDK_INT >= 31) i.loadDescription(this)?.toString() else null
+                        mapOf("provider" to i.provider.flattenToString(), "nome" to i.loadLabel(packageManager), "app" to app,
+                            "descrizione" to descrizione, "classe" to i.provider.className.substringAfterLast('.'),
+                            "minW" to (i.minWidth / d).toDouble(), "minH" to (i.minHeight / d).toDouble(),
+                            "celleW" to (if (Build.VERSION.SDK_INT >= 31) i.targetCellWidth else 0),
+                            "celleH" to (if (Build.VERSION.SDK_INT >= 31) i.targetCellHeight else 0))
+                    }
+                    runOnUiThread { result.success(lista) }
+                }
+                // le viste si disegnano sul thread principale
+                "anteprimaWidget" -> result.success(try { anteprima(call.argument<String>("provider")!!) } catch (e: Exception) { null })
+                "aggiungiWidget" -> {
+                    val cn = ComponentName.unflattenFromString(call.argument<String>("provider")!!)!!
+                    inAttesa?.success(null)
+                    inAttesa = result
+                    widgetInAttesa = host.allocateAppWidgetId()
+                    if (awm.bindAppWidgetIdIfAllowed(widgetInAttesa, cn)) configura()
+                    else startActivityForResult(Intent(AppWidgetManager.ACTION_APPWIDGET_BIND)
+                        .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetInAttesa)
+                        .putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, cn), RQ_PERMESSO)
+                }
+                "rimuoviWidget" -> { host.deleteAppWidgetId(call.argument<Int>("id")!!); result.success(true) }
+                // all'avvio: via i widget rimasti appesi (tolti dalla Home, aggiunte interrotte)
+                "pulisciWidget" -> {
+                    val usati = call.argument<List<Int>>("usati")!!.toSet()
+                    host.appWidgetIds.filter { it !in usati }.forEach { host.deleteAppWidgetId(it) }
+                    result.success(true)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -103,6 +163,16 @@ class HomeActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         la.registerCallback(avvisi)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        host.startListening()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        host.stopListening()
     }
 
     override fun onDestroy() {
@@ -114,6 +184,119 @@ class HomeActivity : FlutterActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (::canale.isInitialized) canale.invokeMethod("home", null)
+    }
+
+    @Deprecated("startActivityForResult: qui basta")
+    override fun onActivityResult(richiesta: Int, esito: Int, dati: Intent?) {
+        super.onActivityResult(richiesta, esito, dati)
+        when (richiesta) {
+            RQ_PERMESSO -> if (esito == RESULT_OK) configura() else finito(false)
+            RQ_CONFIGURA -> finito(esito == RESULT_OK)
+        }
+    }
+
+    private fun info(provider: String): AppWidgetProviderInfo? {
+        val cn = ComponentName.unflattenFromString(provider) ?: return null
+        return awm.getInstalledProvidersForProfile(Process.myUserHandle()).firstOrNull { it.provider == cn }
+    }
+
+    /**
+     * L'anteprima per la scelta: quella generata (Android 15), poi il layout
+     * di anteprima (Android 12, come fa Samsung), poi l'immagine, poi l'icona.
+     */
+    private fun anteprima(provider: String): ByteArray? {
+        val i = info(provider) ?: return null
+        val d = resources.displayMetrics.density
+        val vista: RemoteViews? = when {
+            Build.VERSION.SDK_INT >= 35 -> try {
+                awm.getWidgetPreview(i.provider, Process.myUserHandle(), AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN)
+            } catch (e: Exception) { null }
+            else -> null
+        } ?: if (Build.VERSION.SDK_INT >= 31 && i.previewLayout != 0) RemoteViews(i.provider.packageName, i.previewLayout) else null
+        if (vista != null) {
+            try {
+                val w = maxOf(i.minWidth, (110 * d).toInt()); val h = maxOf(i.minHeight, (110 * d).toInt())
+                val v = vista.apply(this, FrameLayout(this))
+                v.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY))
+                v.layout(0, 0, w, h)
+                val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                v.draw(Canvas(bmp))
+                val k = minOf(1f, 360f / maxOf(w, h))
+                val piccola = Bitmap.createScaledBitmap(bmp, maxOf(1, (w * k).toInt()), maxOf(1, (h * k).toInt()), true)
+                return ByteArrayOutputStream().also { piccola.compress(Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
+            } catch (e: Exception) { }
+        }
+        return (i.loadPreviewImage(this, 0) ?: i.loadIcon(this, 0))?.let { png(it, 360) }
+    }
+
+    // alcuni widget vogliono essere configurati (citta' del meteo, contatto...)
+    private fun configura() {
+        val i = awm.getAppWidgetInfo(widgetInAttesa)
+        val facoltativa = Build.VERSION.SDK_INT >= 31 &&
+            (i?.widgetFeatures ?: 0) and AppWidgetProviderInfo.WIDGET_FEATURE_CONFIGURATION_OPTIONAL != 0
+        if (i?.configure != null && !facoltativa) {
+            try {
+                host.startAppWidgetConfigureActivityForResult(this, widgetInAttesa, 0, RQ_CONFIGURA, null)
+                return
+            } catch (e: Exception) { }
+        }
+        finito(true)
+    }
+
+    private fun finito(ok: Boolean) {
+        if (!ok) host.deleteAppWidgetId(widgetInAttesa)
+        inAttesa?.success(if (ok) widgetInAttesa else null)
+        inAttesa = null
+    }
+
+    /** Il widget come vista nativa; si ridimensiona con la casella della Home. */
+    private inner class Fabbrica : PlatformViewFactory(StandardMessageCodec.INSTANCE) {
+        override fun create(context: Context, viewId: Int, args: Any?): PlatformView {
+            val id = ((args as Map<*, *>)["id"] as Number).toInt()
+            val i = awm.getAppWidgetInfo(id)
+            val v: View = if (i == null) TextView(this@HomeActivity).apply {
+                text = "Widget non disponibile"; setTextColor(Color.WHITE); gravity = Gravity.CENTER
+            } else host.createView(this@HomeActivity, id, i).apply {
+                // il margine lo mette la Home (Flutter): cosi' il ritaglio tondo cade sul widget
+                setPadding(0, 0, 0, 0)
+                addOnLayoutChangeListener { vv, l, t, r, b, ol, ot, or_, ob ->
+                    val d = resources.displayMetrics.density
+                    val w = ((r - l) / d).toInt(); val h = ((b - t) / d).toInt()
+                    if (w > 0 && h > 0 && (r - l != or_ - ol || b - t != ob - ot)) {
+                        @Suppress("DEPRECATION")
+                        (vv as AppWidgetHostView).updateAppWidgetSize(Bundle(), w, h, w, h)
+                    }
+                }
+            }
+            val tonda = Tonda(this@HomeActivity).apply { addView(v) }
+            return object : PlatformView {
+                override fun getView() = tonda
+                override fun dispose() {}
+            }
+        }
+    }
+
+    /**
+     * Angoli tondi come i widget di Android 12, anche per chi non li ha.
+     * Ritaglio a mano: la vista finisce su una superficie di Flutter, dove
+     * clipToOutline non vale.
+     */
+    private class Tonda(c: Context) : FrameLayout(c) {
+        private val raggio = 22 * c.resources.displayMetrics.density
+        private val forma = android.graphics.Path()
+
+        override fun onSizeChanged(w: Int, h: Int, ow: Int, oh: Int) {
+            super.onSizeChanged(w, h, ow, oh)
+            forma.reset()
+            forma.addRoundRect(0f, 0f, w.toFloat(), h.toFloat(), raggio, raggio, android.graphics.Path.Direction.CW)
+        }
+
+        override fun dispatchDraw(c: Canvas) {
+            val n = c.save()
+            c.clipPath(forma)
+            super.dispatchDraw(c)
+            c.restoreToCount(n)
+        }
     }
 
     private fun leggiFiltro(): Map<String, String> {
@@ -161,5 +344,21 @@ class HomeActivity : FlutterActivity() {
             orig.setBounds(o, o, o + l, o + l); orig.draw(tela)
         }
         return ByteArrayOutputStream().also { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
+    }
+
+    private fun png(d: Drawable, max: Int): ByteArray {
+        val w0 = d.intrinsicWidth.takeIf { it > 0 } ?: max
+        val h0 = d.intrinsicHeight.takeIf { it > 0 } ?: max
+        val k = minOf(1f, max.toFloat() / maxOf(w0, h0))
+        val w = maxOf(1, (w0 * k).toInt()); val h = maxOf(1, (h0 * k).toInt())
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        d.setBounds(0, 0, w, h); d.draw(Canvas(bmp))
+        return ByteArrayOutputStream().also { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
+    }
+
+    companion object {
+        const val HOST_ID = 0x52434D
+        const val RQ_PERMESSO = 71
+        const val RQ_CONFIGURA = 72
     }
 }
