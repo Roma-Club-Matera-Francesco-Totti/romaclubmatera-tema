@@ -11,7 +11,7 @@ String messaggioSfondo(String dove) {
 /// "07-olimpico-notte" -> "Olimpico notte"; i nomi speciali sono qui.
 String nomeSfondo(String asset) {
   const speciali = {
-    'capitano': 'Il Capitano', 'totti-10': 'Totti 10', 'de-rossi-16': 'De Rossi 16', 'mmxii': 'MMXII',
+    'capitano': 'Il Capitano', 'totti-10': 'Totti 10', 'de-rossi-16': 'De Rossi 16', 'totti-e-de-rossi': 'Totti e De Rossi', 'mmxii': 'MMXII',
     'da-matera-a-roma': 'Da Matera a Roma', 'forza-grande-roma': 'Forza grande Roma',
     'olimpico-notte': "L'Olimpico", 'la-curva-fumogeni': 'La Curva',
   };
