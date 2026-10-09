@@ -226,7 +226,7 @@ FOTO = {
     'fatte/sfondo-matera-roma-sassi-colosseo-tramonto.png': [('12-da-matera-a-roma', 'DA MATERA A ROMA', {})],
     'fatte/sfondo-roma-curva-sud-bandiere-fumogeni.png': [('14-la-curva-fumogeni', 'ROMA CLUB MATERA', {})],
     'fatte/sfondo-roma-dybala-21-stadio-notte.png': [('21-dybala-21', 'LA JOYA', {})],
-    'fatte/sfondo-roma-malen-14-braccia-alzate-stadio.png': [('22-malen-14', 'DONYELL MALEN', {})],
+    # Malen a braccia alzate tolto (10/10/2026): l'illustrazione gli ha messo i capelli
     'fatte/sfondo-roma-malen-14-curva-bandiere.png': [('22-malen-14-curva', 'DONYELL MALEN', {'centro': .45})],
     'fatte/sfondo-roma-svilar-99-porta.png': [('23-svilar-99', 'MILE SVILAR', {})],
     'fatte/sfondo-roma-mancini-23-bandiera-giallorossa.jpeg': [('24-mancini-23', 'GIANLUCA MANCINI', {})],
@@ -352,10 +352,7 @@ def sfondi(png):
         '06-colosseo': cielo(2330, sole=(1130, 2120)) + terreno(2330)
             + colosseo(cx=720, base=2335, R=560, corpo='#1b0508', cornice='#3a0a12', archi='url(#cielo)')
             + s(300, W / 2, 1120) + scritta(1400, 'ROMA CLUB MATERA', 40, colore='#fbe7b5', sp=12),
-        '10-sassi': tramonto(2420)
-            + sassi(base=2330, colore='#6b1522', finestre='#4a0f19', tratto='#9e2433', seme=3, x0=-200, x1=W + 200, cima=980, alt=430)
-            + sassi(base=2440, colore='#1b0508', finestre='#0b0204', tratto='#3a0a12', seme=7, luci=.12)
-            + s(300, W / 2, 1120) + scritta(1400, 'MATERA', 44, colore='#fbe7b5', sp=24),
+        # '10-sassi' (Sassi disegnati al tramonto) tolto il 10/10/2026: a Michele non piaceva
         '11-sassi-di-notte': cielo(2440, notte=True) + stelle() + terreno(2440, '#0b0204')
             + sassi(base=2440, colore='#14030a', finestre='#0b0204', tratto='#2a070d', luci=.5)
             + s(280, W / 2, 1150, ombra=False) + scritta(1420, 'ROMA CLUB MATERA', 38, colore='#fbe7b5', sp=12),
@@ -381,7 +378,6 @@ def sfondi(png):
             + scritta(2250, '“FRANCESCO TOTTI”', 36, colore='#f6ecd0', sp=8) + scritta(2340, 'MMXII', 30, sp=20),
         # numeri della stagione 2026/27 (09/10/2026): da ricontrollare a ogni mercato
         '21-dybala-21': numero('21', 'LA JOYA', 'PAULO DYBALA'),
-        '22-malen-14': numero('14', 'ATTACCANTE', 'DONYELL MALEN'),
         '23-svilar-99': numero('99', 'PORTIERE', 'MILE SVILAR'),
     }
     orig = os.environ.get('ORIGINALI')

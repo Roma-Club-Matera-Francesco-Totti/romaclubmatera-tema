@@ -218,7 +218,33 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
   final _griglia = GlobalKey(), _dockKey = GlobalKey(), _cestino = GlobalKey();
   _Volo? volo;
   _Bersaglio? bersaglio;
-  Size cella = const Size(90, 110); // una casella della griglia, in dp (per i widget)
+  Size cella = const Size(90, 110);
+  bool paginaDelVolo = false;
+  // due dita che si stringono, come sulla Home Samsung: si apre il menu
+  final _dita = <int, Offset>{};
+  double? _distanza0;
+  bool _pizzicato = false;
+
+  void dito(PointerEvent e, {bool via = false}) {
+    if (via) {
+      _dita.remove(e.pointer);
+    } else {
+      _dita[e.pointer] = e.position;
+    }
+    if (_dita.length != 2) {
+      _distanza0 = null;
+      return;
+    }
+    final d = (_dita.values.first - _dita.values.last).distance;
+    if (_distanza0 == null) {
+      _distanza0 = d;
+      _pizzicato = false;
+    } else if (!_pizzicato && volo == null && cass.value == 0 && d < _distanza0! * .7) {
+      _pizzicato = true;
+      menuHome();
+    }
+  } // una casella della griglia, in dp (per i widget)
+
   Timer? _bordo;
 
   @override
@@ -407,12 +433,13 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
   List<Voce>? listaDi(Voce v) => dock.contains(v) ? dock : pagine.where((p) => p.contains(v)).firstOrNull;
 
   Future<void> salva() async {
-    if (volo == null) {
-      while (pagine.length > 1 && pagine.last.isEmpty) {
-        pagine.removeLast();
-      }
-      if (pagina >= pagine.length) pagina = pagine.length - 1;
+    // le pagine vuote restano (le aggiungi tu); sparisce solo quella aperta
+    // in fondo durante un trascinamento, se e' rimasta vuota
+    if (volo == null && paginaDelVolo) {
+      if (pagine.length > 1 && pagine.last.isEmpty) pagine.removeLast();
+      paginaDelVolo = false;
     }
+    if (pagina >= pagine.length) pagina = pagine.length - 1;
     await _Nativo.scrivi(
       'disposizione',
       jsonEncode({
@@ -445,7 +472,10 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
     if (da == 'pagina') pagine[p].remove(v);
     if (da == 'dock') dock.remove(v);
     // una pagina vuota in fondo, per portarci le cose
-    if (pagine.last.isNotEmpty) pagine.add([]);
+    if (pagine.last.isNotEmpty) {
+      pagine.add([]);
+      paginaDelVolo = true;
+    }
     setState(() => volo = _Volo(v, da, p, locale, dim, globale));
   }
 
@@ -673,6 +703,32 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
 
   Future<void> menuHome() => foglio(null, [
     (Icons.widgets_outlined, 'Widget', sceltaWidget),
+    (
+      Icons.add_to_photos_outlined,
+      'Aggiungi una pagina',
+      () {
+        setState(() => pagine.add([]));
+        salva();
+        final n = pagine.length - 1;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (pc.hasClients) {
+            pc.animateToPage(n, duration: const Duration(milliseconds: 300), curve: Curves.easeOutCubic);
+          }
+        });
+      },
+    ),
+    if (pagine.length > 1 && pagine[pagina].isEmpty)
+      (
+        Icons.delete_sweep_outlined,
+        'Togli questa pagina (è vuota)',
+        () {
+          setState(() {
+            pagine.removeAt(pagina);
+            if (pagina >= pagine.length) pagina = pagine.length - 1;
+          });
+          salva();
+        },
+      ),
     if (!pagine.expand((p) => p).any((v) => v.tipo == 'orologio'))
       (
         Icons.schedule,
@@ -1003,9 +1059,17 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
       // il trascinamento lo segue la Home intera: l'oggetto preso sparisce
       // dal suo posto (e magari dalla pagina), il suo gesto con lui
       child: Listener(
-        onPointerMove: (e) => muovi(e.position),
-        onPointerUp: (e) => fine(e.position),
+        onPointerDown: dito,
+        onPointerMove: (e) {
+          dito(e);
+          muovi(e.position);
+        },
+        onPointerUp: (e) {
+          dito(e, via: true);
+          fine(e.position);
+        },
         onPointerCancel: (e) {
+          dito(e, via: true);
           final f = volo;
           if (f != null) fine(f.pos);
         },
