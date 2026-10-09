@@ -245,10 +245,8 @@ class _HomeState extends State<_Home> {
                   onTap: cassetto,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Column(children: [
-                      const Icon(Icons.keyboard_arrow_up, color: Stile.oro, size: 22),
-                      Text('TUTTE LE APP', style: Stile.sotto(11.5, colore: Stile.panna.withValues(alpha: .85))),
-                    ]),
+                    // solo la freccia: una scritta finirebbe sopra quelle degli sfondi
+                    child: const Icon(Icons.keyboard_arrow_up, color: Stile.oro, size: 26),
                   ),
                 ),
                 Container(

@@ -218,7 +218,7 @@ FOTO = {
     # Totti e De Rossi di spalle; la scelta di usarla cosi' com'e' e' di Michele (09/10/2026)
     '03-totti-de-rossi.png': [('08-totti-10', 'IL CAPITANO', {'centro': .30}),
                               ('09-de-rossi-16', 'CAPITAN FUTURO', {'centro': .755}),
-                              ('09-totti-e-de-rossi', 'CAPITANO E CAPITAN FUTURO', {'intera': True})],
+                              ('09-totti-e-de-rossi', 'I NOSTRI CAPITANI', {'intera': True})],
 }
 
 

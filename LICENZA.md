@@ -31,7 +31,12 @@ delle due licenze: sono del Club. Si possono usare solo così come sono, dentro
 gli sfondi e l'app, per uso personale; **non vanno modificati né usati per
 prodotti in vendita** o per far credere a un'approvazione del Club.
 
-Il progetto non contiene marchi dell'AS Roma, né li concede.
+Il progetto non concede marchi dell'AS Roma né di altri. Gli sfondi di
+Totti e De Rossi (`08-totti-10`, `09-de-rossi-16`, `09-totti-e-de-rossi`)
+vengono da un'illustrazione generata in cui compaiono piccoli loghi sulle
+maglie (AS Roma, Kappa): quei loghi restano dei rispettivi titolari e **sono
+esclusi dalla licenza CC BY 4.0**; gli sfondi si possono usare solo così come
+sono, per uso personale.
 
 ## Componenti di terzi
 
