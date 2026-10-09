@@ -292,8 +292,14 @@ class HomeActivity : FlutterActivity() {
                     val d = resources.displayMetrics.density
                     val w = ((r - l) / d).toInt(); val h = ((b - t) / d).toInt()
                     if (w > 0 && h > 0 && (r - l != or_ - ol || b - t != ob - ot)) {
-                        @Suppress("DEPRECATION")
-                        (vv as AppWidgetHostView).updateAppWidgetSize(Bundle(), w, h, w, h)
+                        // Android 12+: i widget con piu' layout scelgono dall'elenco
+                        // delle dimensioni; vuoto = il layout piu' povero
+                        if (Build.VERSION.SDK_INT >= 31) {
+                            (vv as AppWidgetHostView).updateAppWidgetSize(Bundle(), listOf(android.util.SizeF(w.toFloat(), h.toFloat())))
+                        } else {
+                            @Suppress("DEPRECATION")
+                            (vv as AppWidgetHostView).updateAppWidgetSize(Bundle(), w, h, w, h)
+                        }
                     }
                 }
             }
