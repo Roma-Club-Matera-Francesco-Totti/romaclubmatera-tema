@@ -49,6 +49,11 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (intent?.getBooleanExtra("esporta_icone", false) == true) thread { esportaIcone() }
+        // una disposizione della Home RCM da importare (JSON con i nomi delle app):
+        // la applica la Home al prossimo avvio
+        intent?.getStringExtra("importa_home")?.let {
+            getSharedPreferences("home", MODE_PRIVATE).edit().putString("importa", it).apply()
+        }
     }
 
     private fun esportaIcone() {

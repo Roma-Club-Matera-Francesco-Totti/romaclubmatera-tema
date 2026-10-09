@@ -95,6 +95,18 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+        <!-- le app chiedono di fissare un collegamento sulla Home RCM -->
+        <activity
+            android:name=".PinActivity"
+            android:enabled="${homeRcm}"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.content.pm.action.CONFIRM_PIN_SHORTCUT" />
+            </intent-filter>
+        </activity>
         <!-- pallini delle notifiche della Home RCM (solo quali app, mai il contenuto) -->
         <service
             android:name=".Notifiche"

@@ -177,6 +177,38 @@ class HomeActivity : FlutterActivity() {
                         .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetInAttesa)
                         .putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, cn), RQ_PERMESSO)
                 }
+                // le impostazioni del widget (citta' del meteo, trasparenza...), se ne ha
+                "configuraWidget" -> {
+                    val id = call.argument<Int>("id")!!
+                    val i = awm.getAppWidgetInfo(id)
+                    if (i?.configure == null) result.success(false) else try {
+                        host.startAppWidgetConfigureActivityForResult(this, id, 0, RQ_RICONFIGURA, null)
+                        result.success(true)
+                    } catch (e: Exception) { result.success(false) }
+                }
+                // collegamenti che le app hanno chiesto di fissare (PinActivity)
+                "nuove" -> {
+                    val p = getSharedPreferences("home", MODE_PRIVATE)
+                    val l = p.getString("nuove", null)
+                    p.edit().remove("nuove").apply()
+                    result.success(l)
+                }
+                "iconaScorciatoia" -> thread {
+                    val png = try {
+                        val q = LauncherApps.ShortcutQuery().setPackage(call.argument<String>("pacchetto"))
+                            .setShortcutIds(listOf(call.argument<String>("id")!!))
+                            .setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
+                        la.getShortcuts(q, Process.myUserHandle())?.firstOrNull()
+                            ?.let { la.getShortcutIconDrawable(it, resources.displayMetrics.densityDpi) }
+                            ?.let { d ->
+                                val bmp = Bitmap.createBitmap(192, 192, Bitmap.Config.ARGB_8888)
+                                cornice(Canvas(bmp), 192f, d)
+                                ByteArrayOutputStream().also { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
+                            }
+                    } catch (e: Exception) { null }
+                    runOnUiThread { result.success(png) }
+                }
+                "cancella" -> { getSharedPreferences("home", MODE_PRIVATE).edit().remove(call.argument<String>("chiave")).apply(); result.success(true) }
                 "rimuoviWidget" -> { host.deleteAppWidgetId(call.argument<Int>("id")!!); result.success(true) }
                 // all'avvio: via i widget rimasti appesi (tolti dalla Home, aggiunte interrotte)
                 "pulisciWidget" -> {
@@ -192,6 +224,8 @@ class HomeActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         la.registerCallback(avvisi)
+        nuove = { runOnUiThread { if (::canale.isInitialized) canale.invokeMethod("nuove", null) } }
+        Notifiche.ascolta = { app -> runOnUiThread { if (::canale.isInitialized) canale.invokeMethod("pallini", app.toList()) } }
     }
 
     override fun onStart() {
@@ -205,6 +239,8 @@ class HomeActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        nuove = null
+        Notifiche.ascolta = null
         la.unregisterCallback(avvisi)
         super.onDestroy()
     }
@@ -281,26 +317,18 @@ class HomeActivity : FlutterActivity() {
     /** Il widget come vista nativa; si ridimensiona con la casella della Home. */
     private inner class Fabbrica : PlatformViewFactory(StandardMessageCodec.INSTANCE) {
         override fun create(context: Context, viewId: Int, args: Any?): PlatformView {
-            val id = ((args as Map<*, *>)["id"] as Number).toInt()
+            val m = args as Map<*, *>
+            val id = (m["id"] as Number).toInt()
+            // lato della casella della Home in dp: i widget Samsung vogliono le caselle occupate
+            val celle = ((m["cw"] as? Number)?.toFloat() ?: 90f) to ((m["ch"] as? Number)?.toFloat() ?: 110f)
             val i = awm.getAppWidgetInfo(id)
             val v: View = if (i == null) TextView(this@HomeActivity).apply {
                 text = "Widget non disponibile"; setTextColor(Color.WHITE); gravity = Gravity.CENTER
             } else host.createView(this@HomeActivity, id, i).apply {
                 // il margine lo mette la Home (Flutter): cosi' il ritaglio tondo cade sul widget
                 setPadding(0, 0, 0, 0)
-                addOnLayoutChangeListener { vv, l, t, r, b, ol, ot, or_, ob ->
-                    val d = resources.displayMetrics.density
-                    val w = ((r - l) / d).toInt(); val h = ((b - t) / d).toInt()
-                    if (w > 0 && h > 0 && (r - l != or_ - ol || b - t != ob - ot)) {
-                        // Android 12+: i widget con piu' layout scelgono dall'elenco
-                        // delle dimensioni; vuoto = il layout piu' povero
-                        if (Build.VERSION.SDK_INT >= 31) {
-                            (vv as AppWidgetHostView).updateAppWidgetSize(Bundle(), listOf(android.util.SizeF(w.toFloat(), h.toFloat())))
-                        } else {
-                            @Suppress("DEPRECATION")
-                            (vv as AppWidgetHostView).updateAppWidgetSize(Bundle(), w, h, w, h)
-                        }
-                    }
+                addOnLayoutChangeListener { _, l, t, r, b, ol, ot, or_, ob ->
+                    if (r - l > 0 && b - t > 0 && (r - l != or_ - ol || b - t != ob - ot)) dimensioni(id, r - l, b - t, celle)
                 }
             }
             val tonda = Tonda(this@HomeActivity).apply { addView(v) }
@@ -309,6 +337,40 @@ class HomeActivity : FlutterActivity() {
                 override fun dispose() {}
             }
         }
+    }
+
+    /**
+     * Dice al widget quanto e' grande: l'elenco delle dimensioni (Android 12+:
+     * i widget con piu' layout scelgono da li', vuoto = il piu' povero) e le
+     * opzioni che passa la Home Samsung (stile One UI, tema scuro, caselle):
+     * senza, il meteo Samsung non e' trasparente e non sa quante caselle ha.
+     */
+    private fun dimensioni(id: Int, wPx: Int, hPx: Int, celle: Pair<Float, Float>) {
+        val d = resources.displayMetrics.density
+        val w = wPx / d; val h = hPx / d
+        val o = awm.getAppWidgetOptions(id) ?: Bundle()
+        o.putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, w.toInt())
+        o.putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, w.toInt())
+        o.putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, h.toInt())
+        o.putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, h.toInt())
+        if (Build.VERSION.SDK_INT >= 31) {
+            o.putParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES, arrayListOf(android.util.SizeF(w, h)))
+        }
+        val col = maxOf(1, Math.round(w / celle.first)); val righe = maxOf(1, Math.round(h / celle.second))
+        val notte = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+        o.putString("hsMode", "OneUI")
+        o.putInt("semHostType", 1)
+        o.putInt("semWidgetStyle", 1)
+        o.putInt("semAppWidgetColumnSpan", col)
+        o.putInt("semAppWidgetRowSpan", righe)
+        o.putInt("darkModeStatus", notte)
+        o.putFloat("semShapeRadius", 22f)
+        o.putFloat("semDisplayDensity", d)
+        o.putFloat("semFontScale", resources.configuration.fontScale)
+        o.putBoolean("semIsWallpaperBlurSupported", true)
+        o.putBoolean("hsWidgetLabelEnabled", false)
+        o.putFloat("hsResizeRatio", 1f)
+        try { awm.updateAppWidgetOptions(id, o) } catch (e: Exception) { }
     }
 
     /**
@@ -428,5 +490,8 @@ class HomeActivity : FlutterActivity() {
         const val HOST_ID = 0x52434D
         const val RQ_PERMESSO = 71
         const val RQ_CONFIGURA = 72
+        const val RQ_RICONFIGURA = 73
+        /** PinActivity avvisa la Home quando arriva un collegamento nuovo. */
+        var nuove: (() -> Unit)? = null
     }
 }

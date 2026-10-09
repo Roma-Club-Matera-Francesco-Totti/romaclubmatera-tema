@@ -51,14 +51,16 @@ class Voce {
     this.nome = '',
     this.id,
     this.provider,
+    this.sc,
   }) : apps = apps ?? [];
-  final String tipo; // app, cartella, widget, orologio
+  final String tipo; // app, cartella, widget, orologio, scorciatoia
   int x, y, w, h;
   String? app;
   List<String> apps;
   String nome;
   int? id; // widget: id di AppWidgetHost
   String? provider;
+  String? sc; // scorciatoia fissata: il suo id (app = il pacchetto)
 
   Map<String, dynamic> json() => {
     'tipo': tipo,
@@ -71,6 +73,7 @@ class Voce {
     if (nome.isNotEmpty) 'nome': nome,
     'id': ?id,
     'provider': ?provider,
+    'sc': ?sc,
   };
 
   factory Voce.da(Map m) => Voce(
@@ -84,6 +87,7 @@ class Voce {
     nome: m['nome'] ?? '',
     id: m['id'],
     provider: m['provider'],
+    sc: m['sc'],
   );
 
   bool copre(int cx, int cy) => cx >= x && cx < x + w && cy >= y && cy < y + h;
@@ -122,8 +126,17 @@ class _Nativo {
   static Future<void> rimuoviWidget(int id) => c.invokeMethod('rimuoviWidget', {'id': id});
   static Future<List<Map>> scorciatoie(App a) async =>
       await c.invokeListMethod<Map>('scorciatoie', {'pacchetto': a.pacchetto, 'attivita': a.attivita}) ?? [];
-  static Future<void> avviaScorciatoia(App a, String id) =>
-      c.invokeMethod('avviaScorciatoia', {'pacchetto': a.pacchetto, 'id': id});
+  static Future<void> avviaScorciatoia(String pacchetto, String id) =>
+      c.invokeMethod('avviaScorciatoia', {'pacchetto': pacchetto, 'id': id});
+  static final _iconeSc = <String, Future<Uint8List?>>{};
+  static Future<Uint8List?> iconaScorciatoia(String pacchetto, String id) => _iconeSc.putIfAbsent(
+    '$pacchetto/$id',
+    () => c.invokeMethod<Uint8List>('iconaScorciatoia', {'pacchetto': pacchetto, 'id': id}),
+  );
+  static Future<String?> nuove() => c.invokeMethod<String>('nuove');
+  static Future<bool> configuraWidget(int id) async =>
+      await c.invokeMethod<bool>('configuraWidget', {'id': id}) ?? false;
+  static Future<void> cancella(String k) => c.invokeMethod('cancella', {'chiave': k});
   static Future<Map?> pallini() => c.invokeMapMethod('pallini');
   static Future<void> pulisciWidget(List<int> usati) => c.invokeMethod('pulisciWidget', {'usati': usati});
 }
@@ -205,13 +218,16 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
   final _griglia = GlobalKey(), _dockKey = GlobalKey(), _cestino = GlobalKey();
   _Volo? volo;
   _Bersaglio? bersaglio;
+  Size cella = const Size(90, 110); // una casella della griglia, in dp (per i widget)
   Timer? _bordo;
 
   @override
   void initState() {
     super.initState();
     _Nativo.c.setMethodCallHandler((call) async {
-      if (call.method == 'pallini') {
+      if (call.method == 'nuove') {
+        await aggiungiNuove();
+      } else if (call.method == 'pallini') {
         _pallini.value = Set<String>.from(call.arguments);
         permessoPallini = true;
       } else if (call.method == 'cambiate') {
@@ -257,6 +273,9 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
     } else {
       await iniziale(app);
     }
+    final imp = await _Nativo.leggi('importa');
+    if (imp != null) await importa(imp);
+    await aggiungiNuove();
     final p = await _Nativo.pallini();
     if (p != null) {
       permessoPallini = p['permesso'] == true;
@@ -283,6 +302,72 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
     }
     dock = [for (final (i, c) in d.take(_postiDock).indexed) Voce('app', x: i, app: c)];
     await salva();
+  }
+
+  /// I collegamenti che le app hanno chiesto di fissare (PinActivity.kt).
+  Future<void> aggiungiNuove() async {
+    final s = await _Nativo.nuove();
+    if (s == null || !mounted) return;
+    for (final n in jsonDecode(s)) {
+      metti(
+        Voce('scorciatoia', app: n['pacchetto'], sc: n['id'], nome: n['nome'] ?? ''),
+        da: pagina,
+      );
+    }
+    setState(() {});
+    salva();
+  }
+
+  /// Una disposizione scritta a mano (o copiata da un'altra Home): le app per
+  /// nome, "Nome@pacchetto" quando due app si chiamano uguale; i widget per
+  /// provider. Arriva da MainActivity (extra "importa_home").
+  Future<void> importa(String s) async {
+    final m = jsonDecode(s);
+    final mancanti = <String>[];
+    String? daNome(String t) {
+      final parti = t.split('@');
+      final n = parti.first.toLowerCase(), pkg = parti.length > 1 ? parti[1] : null;
+      Iterable<App> c = tutte.where((a) => pkg == null || a.pacchetto.contains(pkg));
+      final a =
+          c.where((a) => a.nome.toLowerCase() == n).firstOrNull ??
+          c.where((a) => a.nome.toLowerCase().startsWith(n)).firstOrNull;
+      if (a == null) mancanti.add(t);
+      return a?.chiave;
+    }
+
+    Future<Voce?> voce(Map v) async {
+      final x = v['x'] ?? 0, y = v['y'] ?? 0;
+      switch (v['tipo']) {
+        case 'app':
+          final k = daNome(v['nome']);
+          return k == null ? null : Voce('app', x: x, y: y, app: k);
+        case 'cartella':
+          final apps = [for (final n in v['apps']) ?daNome(n)];
+          return apps.isEmpty ? null : Voce('cartella', x: x, y: y, apps: apps, nome: v['nome'] ?? 'Cartella');
+        case 'widget':
+          final id = await _Nativo.aggiungiWidget(v['provider']);
+          if (id == null) mancanti.add('widget ${v['provider'].split('.').last}');
+          return id == null
+              ? null
+              : Voce('widget', x: x, y: y, w: v['w'] ?? 1, h: v['h'] ?? 1, id: id, provider: v['provider']);
+        case 'orologio':
+          return Voce('orologio', x: x, y: y, w: _colonne, h: 2);
+      }
+      return null;
+    }
+
+    pagine = [
+      for (final p in m['pagine']) [for (final v in p) ?await voce(v)],
+    ];
+    if (pagine.isEmpty) pagine = [[]];
+    dock = [for (final v in m['dock']) ?await voce(v)];
+    await _Nativo.cancella('importa');
+    await salva();
+    if (mancanti.isNotEmpty && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(duration: const Duration(seconds: 10), content: Text('Non trovate: ${mancanti.join(', ')}')),
+      );
+    }
   }
 
   /// Un'app disinstallata (o in aggiornamento) non si vede e non occupa posto,
@@ -501,7 +586,7 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
               title: Text(sc['nome'] ?? '', style: Stile.testo(16)),
               onTap: () {
                 Navigator.pop(ctx);
-                _Nativo.avviaScorciatoia(di!, sc['id']);
+                _Nativo.avviaScorciatoia(di!.pacchetto, sc['id']);
               },
             ),
           if (scorciatoie.isNotEmpty) Divider(color: Stile.oro.withValues(alpha: .3), indent: 16, endIndent: 16),
@@ -562,8 +647,22 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
           (Icons.folder_open, 'Apri e rinomina', () => apriCartella(v)),
           (Icons.remove_circle_outline, 'Togli la cartella (le app restano nel cassetto)', () => togli(v)),
         ]);
+      case 'scorciatoia':
+        await foglio(Text(v.nome, style: Stile.titolo(17)), [
+          (Icons.remove_circle_outline, 'Togli dalla Home', () => togli(v)),
+        ]);
       case 'widget':
         await foglio(null, [
+          (
+            Icons.tune,
+            'Impostazioni del widget',
+            () async {
+              final m = ScaffoldMessenger.of(context);
+              if (!await _Nativo.configuraWidget(v.id!)) {
+                m.showSnackBar(const SnackBar(content: Text('Questo widget non ha impostazioni')));
+              }
+            },
+          ),
           (Icons.aspect_ratio, 'Dimensioni', () => dimensioni(v)),
           (Icons.remove_circle_outline, 'Togli il widget', () => togli(v)),
         ]);
@@ -795,7 +894,8 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
     final (Widget figlio, VoidCallback? tocco) = switch (v.tipo) {
       'app' => (_Lancio(perChiave[v.app]!, etichetta: etichetta), () => _Nativo.avvia(perChiave[v.app]!)),
       'cartella' => (_IconaCartella(v, perChiave, etichetta: etichetta), () => apriCartella(v)),
-      'widget' => (Padding(padding: const EdgeInsets.all(6), child: _VistaWidget(v.id!)), null),
+      'widget' => (Padding(padding: const EdgeInsets.all(6), child: _VistaWidget(v.id!, cella)), null),
+      'scorciatoia' => (_LancioSc(v, etichetta: etichetta), () => _Nativo.avviaScorciatoia(v.app!, v.sc!)),
       _ => (const FittedBox(fit: BoxFit.scaleDown, child: _Orologio()), null),
     };
     return _Presa(key: ObjectKey(v), tocco: tocco, inizio: (g, l, s) => inizia(v, da, g, l, s), child: figlio);
@@ -804,6 +904,7 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
   Widget unaPagina(int i) => LayoutBuilder(
     builder: (_, c) {
       final cw = c.maxWidth / _colonne, ch = c.maxHeight / _righe;
+      cella = Size(cw, ch);
       final b = bersaglio, f = volo;
       return Stack(
         children: [
@@ -868,6 +969,7 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
     final Widget figura = switch (f.v.tipo) {
       'app' => _Icona(perChiave[f.v.app]!),
       'cartella' => _IconaCartella(f.v, perChiave, etichetta: false),
+      'scorciatoia' => _LancioSc(f.v, etichetta: false),
       'orologio' => const FittedBox(child: _Orologio()),
       _ => DecoratedBox(
         decoration: BoxDecoration(
@@ -1065,13 +1167,14 @@ class _Segno extends StatelessWidget {
 }
 
 class _VistaWidget extends StatelessWidget {
-  const _VistaWidget(this.id);
+  const _VistaWidget(this.id, this.cella);
   final int id;
+  final Size cella;
 
   @override
   Widget build(BuildContext context) => AndroidView(
     viewType: 'rcm/widget',
-    creationParams: {'id': id},
+    creationParams: {'id': id, 'cw': cella.width, 'ch': cella.height},
     creationParamsCodec: const StandardMessageCodec(),
     // le liste dentro i widget (posta, calendario) scorrono
     gestureRecognizers: {Factory<VerticalDragGestureRecognizer>(VerticalDragGestureRecognizer.new)},
@@ -1212,6 +1315,44 @@ class _Lancio extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Un collegamento fissato (contatto, dispositivo, "Fotocamera" di un'app):
+/// la sua icona nella cornice del Club.
+class _LancioSc extends StatelessWidget {
+  const _LancioSc(this.v, {this.etichetta = true});
+  final Voce v;
+  final bool etichetta;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      SizedBox(
+        width: _lato,
+        height: _lato,
+        child: FutureBuilder(
+          future: _Nativo.iconaScorciatoia(v.app!, v.sc!),
+          builder: (_, s) => s.data == null
+              ? const Icon(Icons.link, color: Stile.oro)
+              : Image.memory(s.data!, gaplessPlayback: true, filterQuality: FilterQuality.medium),
+        ),
+      ),
+      if (etichetta) ...[
+        const SizedBox(height: 5),
+        SizedBox(
+          width: 80,
+          child: Text(
+            v.nome,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: _ombraTesto,
+          ),
+        ),
+      ],
+    ],
+  );
 }
 
 /// Il pallino oro: una di queste app ha notifiche da leggere.
