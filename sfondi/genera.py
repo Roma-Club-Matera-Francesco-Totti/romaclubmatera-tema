@@ -314,6 +314,16 @@ def sfondi(png):
     grana = f'<rect width="{W}" height="{H}" filter="url(#grana)" opacity=".07"/>'
     tondo = (f'<circle cx="{W / 2:.0f}" cy="1650" r="540" fill="#1b0508"/>'
              f'<circle cx="{W / 2:.0f}" cy="1650" r="540" fill="none" stroke="url(#oro)" stroke-width="10"/>' + s(680, W / 2, 1650))
+
+    def numero(n, ruolo, nome):
+        """Il numero di maglia gigante in oro, con ruolo e nome sotto."""
+        return (f'<rect width="{W}" height="{H}" fill="url(#luce)"/><rect width="{W}" height="{H}" fill="url(#vignetta)"/>' + grana
+                + f'<text x="{W / 2 + 14:.0f}" y="1874" text-anchor="middle" font-family="Oswald" font-weight="700" font-size="1060" fill="#2a070d" opacity=".55">{n}</text>'
+                + f'<text x="{W / 2:.0f}" y="1860" text-anchor="middle" font-family="Oswald" font-weight="700" font-size="1060" fill="url(#oro)">{n}</text>'
+                + scritta(2010, ruolo, 60, sp=18) + filetto(2050, w=520)
+                + scritta(2170, nome, 88, colore='#f6ecd0', font='Oswald', peso=600, sp=8)
+                + s(150, W / 2, 2360, ombra=False))
+
     tramonto = lambda oriz: cielo(oriz) + terreno(oriz)
     d = {
         '01-giallorosso': f'<rect width="{W}" height="{H}" fill="url(#luce)"/>' + righe('#e3ad1e')
@@ -323,12 +333,7 @@ def sfondi(png):
         '03-sciarpa': strisce + f'<rect width="{W}" height="{H}" fill="url(#vignetta)"/>' + tondo,
         '04-panna': f'<rect width="{W}" height="{H}" fill="url(#panna)"/>' + righe('#8e1f2f')
             + s(760, W / 2, 1600) + filetto(2120, '#5a0f19') + scritta(2210, 'FORZA ROMA', 48, colore='#5a0f19'),
-        '05-capitano': f'<rect width="{W}" height="{H}" fill="url(#luce)"/><rect width="{W}" height="{H}" fill="url(#vignetta)"/>' + grana
-            + f'<text x="{W / 2 + 14:.0f}" y="1874" text-anchor="middle" font-family="Oswald" font-weight="700" font-size="1060" fill="#2a070d" opacity=".55">10</text>'
-            + f'<text x="{W / 2:.0f}" y="1860" text-anchor="middle" font-family="Oswald" font-weight="700" font-size="1060" fill="url(#oro)">10</text>'
-            + scritta(2010, 'IL CAPITANO', 60, sp=18) + filetto(2050, w=520)
-            + scritta(2170, 'FRANCESCO TOTTI', 88, colore='#f6ecd0', font='Oswald', peso=600, sp=8)
-            + s(150, W / 2, 2360, ombra=False),
+        '05-capitano': numero('10', 'IL CAPITANO', 'FRANCESCO TOTTI'),
         '06-colosseo': cielo(2330, sole=(1130, 2120)) + terreno(2330)
             + colosseo(cx=720, base=2335, R=560, corpo='#1b0508', cornice='#3a0a12', archi='url(#cielo)')
             + s(300, W / 2, 1120) + scritta(1400, 'ROMA CLUB MATERA', 40, colore='#fbe7b5', sp=12),
@@ -359,6 +364,10 @@ def sfondi(png):
             + s(560, W / 2, 1580) + scritta(2130, 'ROMA CLUB MATERA', 52, sp=16)
             + f'<rect x="{W / 2 - 160:.0f}" y="2170" width="320" height="3" fill="url(#oro)"/>'
             + scritta(2250, '“FRANCESCO TOTTI”', 36, colore='#f6ecd0', sp=8) + scritta(2340, 'MMXII', 30, sp=20),
+        # numeri della stagione 2026/27 (09/10/2026): da ricontrollare a ogni mercato
+        '21-dybala-21': numero('21', 'LA JOYA', 'PAULO DYBALA'),
+        '22-malen-14': numero('14', 'ATTACCANTE', 'DONYELL MALEN'),
+        '23-svilar-99': numero('99', 'PORTIERE', 'MILE SVILAR'),
     }
     orig = os.environ.get('ORIGINALI')
     if orig:
