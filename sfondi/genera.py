@@ -213,13 +213,28 @@ def olimpico():
 # nell'archivio del Club: la cartella si passa con ORIGINALI=..., il percorso
 # non va nel repo. Nome del file -> (nome dello sfondo, scritta sotto lo stemma).
 FOTO = {
-    '01.png': [('07-olimpico-notte', 'ROMA CLUB MATERA', {})],
-    '02.png': [('14-la-curva-fumogeni', 'ROMA CLUB MATERA', {})],
     # Totti e De Rossi di spalle; la scelta di usarla cosi' com'e' e' di Michele (09/10/2026)
     '03-totti-de-rossi.png': [('08-totti-10', 'IL CAPITANO', {'centro': .30}),
                               ('09-de-rossi-16', 'CAPITAN FUTURO', {'centro': .755}),
                               ('09-totti-e-de-rossi', 'I NOSTRI CAPITANI', {'intera': True})],
+    # illustrazioni del 09/10/2026 (cartella fatte/, nomi gia' pensati per il SEO):
+    # prendono il posto delle versioni disegnate qui sotto, che restano se mancano
+    'fatte/sfondo-roma-maglia-10-capitano-spogliatoio.png': [('05-capitano', 'IL CAPITANO', {})],
+    'fatte/sfondo-roma-colosseo-tramonto.png': [('06-colosseo', 'ROMA CLUB MATERA', {'centro': .42})],
+    'fatte/sfondo-roma-stadio-olimpico-notte.png': [('07-olimpico-notte', 'ROMA CLUB MATERA', {})],
+    'fatte/sfondo-matera-sassi-notte-luna.png': [('11-sassi-di-notte', 'MATERA', {'centro': .45})],
+    'fatte/sfondo-matera-roma-sassi-colosseo-tramonto.png': [('12-da-matera-a-roma', 'DA MATERA A ROMA', {})],
+    'fatte/sfondo-roma-curva-sud-bandiere-fumogeni.png': [('14-la-curva-fumogeni', 'ROMA CLUB MATERA', {})],
+    'fatte/sfondo-roma-dybala-21-stadio-notte.png': [('21-dybala-21', 'LA JOYA', {})],
+    'fatte/sfondo-roma-malen-14-braccia-alzate-stadio.png': [('22-malen-14', 'DONYELL MALEN', {})],
+    'fatte/sfondo-roma-malen-14-curva-bandiere.png': [('22-malen-14-curva', 'DONYELL MALEN', {'centro': .45})],
+    'fatte/sfondo-roma-svilar-99-porta.png': [('23-svilar-99', 'MILE SVILAR', {})],
+    'fatte/sfondo-roma-mancini-23-bandiera-giallorossa.jpeg': [('24-mancini-23', 'GIANLUCA MANCINI', {})],
+    # la bandiera col topo sfotte la Lazio: voluta da Michele (10/10/2026)
+    'fatte/sfondo-roma-mancini-23-bandiera-derby.png': [('24-mancini-23-derby', 'GIANLUCA MANCINI', {})],
+    'fatte/sfondo-roma-portiere-tuffo-riflettori.png': [('25-portiere-tuffo', 'ROMA CLUB MATERA', {'centro': .55})],
 }
+
 
 
 def da_foto(file, testo, png, centro=.5, intera=False):

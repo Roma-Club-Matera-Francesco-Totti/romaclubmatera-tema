@@ -30,15 +30,14 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.StandardMessageCodec
 import io.flutter.plugin.platform.PlatformView
 import io.flutter.plugin.platform.PlatformViewFactory
-import org.xmlpull.v1.XmlPullParser
 import java.io.ByteArrayOutputStream
 import kotlin.concurrent.thread
 
 /**
  * La Home del Club: un launcher vero (categoria HOME), disegnato in Flutter
  * (entrypoint "home" in lib/home.dart) sopra lo sfondo del telefono.
- * Le icone sono quelle del tema: dal pacchetto se l'app e' in appfilter.xml,
- * altrimenti l'icona originale ritagliata dentro la cornice del Club.
+ * Le icone sono quelle originali delle app, ritagliate dentro la cornice
+ * del Club.
  * I widget delle altre app vivono qui (AppWidgetHost) e Flutter li mostra
  * come viste native "rcm/widget".
  */
@@ -47,8 +46,6 @@ class HomeActivity : FlutterActivity() {
     private lateinit var canale: MethodChannel
     private val la by lazy { getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps }
 
-    // componente "pacchetto/attivita'" -> nome del drawable del tema
-    private val filtro: Map<String, String> by lazy { leggiFiltro() }
 
     private val awm by lazy { AppWidgetManager.getInstance(this) }
     private val host by lazy { AppWidgetHost(applicationContext, HOST_ID) }
@@ -396,47 +393,17 @@ class HomeActivity : FlutterActivity() {
         }
     }
 
-    private fun leggiFiltro(): Map<String, String> {
-        val m = HashMap<String, String>()
-        val id = resources.getIdentifier("appfilter", "xml", packageName)
-        if (id == 0) return m
-        val x = resources.getXml(id)
-        while (x.next() != XmlPullParser.END_DOCUMENT) {
-            if (x.eventType != XmlPullParser.START_TAG) continue
-            when (x.name) {
-                "item" -> {
-                    val comp = x.getAttributeValue(null, "component") ?: continue
-                    val d = x.getAttributeValue(null, "drawable") ?: continue
-                    val k = comp.removePrefix("ComponentInfo{").removeSuffix("}")
-                    // "pacchetto/.Attivita" -> nome completo
-                    val (p, a) = k.split("/", limit = 2).let { it[0] to it.getOrElse(1) { "" } }
-                    m["$p/${if (a.startsWith(".")) p + a else a}"] = d
-                    m.putIfAbsent("$p/*", d) // stessa app con un'attivita' diversa
-                }
-            }
-        }
-        return m
-    }
-
-    private fun drawable(nome: String): Drawable? {
-        val id = resources.getIdentifier(nome, "drawable", packageName)
-        return if (id == 0) null else resources.getDrawable(id, theme)
-    }
-
     private fun icona(c: ComponentName): ByteArray {
         val lato = 192
         val bmp = Bitmap.createBitmap(lato, lato, Bitmap.Config.ARGB_8888)
         val tela = Canvas(bmp)
-        val mio = filtro["${c.packageName}/${c.className}"] ?: filtro["${c.packageName}/*"]
-        val tema = mio?.let { drawable(it) }
-        if (tema != null) {
-            tema.setBounds(0, 0, lato, lato); tema.draw(tela)
-        } else {
-            val orig = la.getActivityList(c.packageName, Process.myUserHandle())
-                .firstOrNull { it.componentName == c }?.getIcon(0)
-                ?: packageManager.getApplicationIcon(c.packageName)
-            cornice(tela, lato.toFloat(), orig)
-        }
+        // dalla 1.5.3 tutte le app con la loro icona nel bordino del Club
+        // (Michele, 10/10/2026: "le icone originali con il bordino sono piu' belle");
+        // le icone disegnate restano nel pacchetto per Theme Park e gli altri launcher
+        val orig = la.getActivityList(c.packageName, Process.myUserHandle())
+            .firstOrNull { it.componentName == c }?.getIcon(0)
+            ?: packageManager.getApplicationIcon(c.packageName)
+        cornice(tela, lato.toFloat(), orig)
         return ByteArrayOutputStream().also { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
     }
 
