@@ -34,4 +34,4 @@ Codice **Apache 2.0**, grafica **CC BY 4.0**; stemma e nome del Club esclusi.
 Ogni copia o modifica deve riportare il riferimento **«romaclubmatera.it»**.
 Tutti i dettagli, e i componenti di terzi, in [LICENZA.md](LICENZA.md).
 
-Niente marchi dell'AS Roma né volti di giocatori.
+Niente lupetto dell'AS Roma né volti di giocatori.
