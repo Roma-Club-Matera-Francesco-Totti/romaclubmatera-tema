@@ -19,6 +19,10 @@ rm -f "$ASSETS"/icone/*.png
 cp "$RES"/drawable-nodpi/rcm_*.png "$ASSETS/icone/"
 rm "$ASSETS/icone/rcm_cornice.png" "$ASSETS"/icone/rcm_l_*.png  # nella scheda Icone solo le icone del Club
 
+# il modello del pacchetto di icone che l'app completa sul telefono (Pacchetto.kt)
+mkdir -p "$QUI/app/android/app/src/main/assets"
+"$QUI/pacchetto/modello.sh" "$QUI/app/android/app/src/main/assets/pacchetto-modello.apk"
+
 # icona dell'app: stemma su rosso (adattiva) e versione tonda per i vecchi launcher
 rsvg-convert -w 230 "$QUI/sfondi/stemma.svg" -o "$TMP/s.png"
 convert -size 432x432 xc:none "$TMP/s.png" -gravity center -geometry +0+4 -composite "$RES/drawable-nodpi/ic_primo_piano.png"

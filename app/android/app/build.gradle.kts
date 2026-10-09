@@ -63,3 +63,8 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // firma sul telefono del pacchetto di icone per Theme Park (Pacchetto.kt)
+    implementation("com.android.tools.build:apksig:8.13.1")
+}

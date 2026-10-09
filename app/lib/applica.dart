@@ -100,18 +100,19 @@ class _PaginaApplicaState extends State<PaginaApplica> with WidgetsBindingObserv
       titolo: 'Telefono Samsung',
       icona: Icons.phone_android,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Il launcher Samsung accetta le icone tramite Theme Park, un\'app gratuita di Samsung. '
-            'Il pulsante qui sotto ti porta al passo che manca.', style: Stile.testo(15)),
+        Text('La Home Samsung accetta le icone tramite Theme Park, un\'app gratuita di Samsung. L\'app ti prepara '
+            'un pacchetto con tutte le tue app, ognuna con la sua icona nel bordino del Club.', style: Stile.testo(15)),
         const SizedBox(height: 10),
         _Passo(1, 'Installa Good Lock dal Galaxy Store, aprilo e accetta i termini.', fatto: haGoodLock),
         _Passo(2, 'Installa Theme Park (da Good Lock o dal Galaxy Store).', fatto: haThemePark),
-        const _Passo(3, 'In Theme Park tocca Icon in basso, poi Create new.'),
-        const _Passo(4, 'Nell\'editor tocca Icon in basso, poi Iconpack, e scegli Tema RCM.'),
-        const _Passo(5, 'Tocca il pulsante di salvataggio in alto a destra e dai un nome senza spazi, per esempio TemaRCM.'),
-        const _Passo(6, 'Tocca il tema salvato e poi Apply.'),
+        const _Passo(3, 'Crea il pacchetto con le tue app (pulsante qui sotto) e conferma l\'installazione.'),
+        const _PacchettoMio(),
+        const _Passo(4, 'In Theme Park tocca Icon in basso, poi Create new.'),
+        const _Passo(5, 'Nell\'editor tocca Icon in basso, poi Iconpack, e scegli «Tema RCM · le mie app».'),
+        const _Passo(6, 'Tocca il pulsante di salvataggio in alto a destra e dai un nome senza spazi, per esempio TemaRCM.'),
+        const _Passo(7, 'Tocca il tema salvato e poi Apply.'),
         const SizedBox(height: 6),
-        Text('Con Theme Park le app senza un\'icona del Club restano come sono: per avere la cornice '
-            'su tutte usa la Home del Club, qui sopra.', style: Stile.sotto(13)),
+        Text('Quando installi app nuove, ricrea il pacchetto e rifai i passi 4-7.', style: Stile.sotto(13)),
         const SizedBox(height: 12),
         Pulsante(testo, icona: icona, onPressed: azione),
       ]),
@@ -196,6 +197,90 @@ class _Scheda extends StatelessWidget {
         ]),
         const SizedBox(height: 12),
         child,
+      ]),
+    );
+  }
+}
+
+/// Passo 3 per Samsung: crea e installa il pacchetto con le app del telefono.
+class _PacchettoMio extends StatefulWidget {
+  const _PacchettoMio();
+
+  @override
+  State<_PacchettoMio> createState() => _PacchettoMioState();
+}
+
+class _PacchettoMioState extends State<_PacchettoMio> with WidgetsBindingObserver {
+  Map stato = {};
+  String? messaggio;
+  bool lavora = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    Tema.ascolta((call) async {
+      if (!mounted) return;
+      if (call.method == 'pacchettoAvanzamento') {
+        setState(() => messaggio = 'Preparo le icone: ${call.arguments['fatte']} di ${call.arguments['totale']}…');
+      } else if (call.method == 'pacchettoEsito') {
+        final ok = call.arguments['ok'] == true;
+        setState(() => messaggio = ok
+            ? 'Pacchetto installato. Ora in Theme Park scegli «Tema RCM · le mie app».'
+            : 'Installazione non riuscita${call.arguments['messaggio'] == null ? '' : ': ${call.arguments['messaggio']}'}');
+        aggiorna();
+      }
+    });
+    aggiorna();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState s) {
+    if (s == AppLifecycleState.resumed) aggiorna();
+  }
+
+  Future<void> aggiorna() async {
+    final s = await Tema.pacchettoStato();
+    if (mounted) setState(() => stato = s);
+  }
+
+  Future<void> crea() async {
+    setState(() {
+      lavora = true;
+      messaggio = 'Preparo le icone…';
+    });
+    final r = await Tema.pacchettoCrea();
+    if (!mounted) return;
+    setState(() {
+      lavora = false;
+      messaggio = r['errore'] != null
+          ? 'Non sono riuscito a creare il pacchetto: ${r['errore']}'
+          : 'Pacchetto pronto con ${r['app']} app: conferma l\'installazione.';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final permesso = stato['permesso'] == true;
+    final installato = stato['installato'] != null;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(34, 0, 0, 12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (!permesso && stato.isNotEmpty) ...[
+          Text('Prima consenti a Tema RCM di installare il pacchetto (lo chiede Android una volta sola).',
+              style: Stile.sotto(13)),
+          const SizedBox(height: 8),
+          Pulsante('Consenti', icona: Icons.lock_open, pieno: false, onPressed: Tema.pacchettoPermesso),
+        ] else
+          Pulsante(installato ? 'Ricrea il pacchetto' : 'Crea il pacchetto con le mie app',
+              icona: Icons.auto_awesome, onPressed: lavora ? null : crea),
+        if (messaggio != null) ...[const SizedBox(height: 8), Text(messaggio!, style: Stile.sotto(13))],
       ]),
     );
   }

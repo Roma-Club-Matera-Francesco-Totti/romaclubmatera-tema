@@ -4,6 +4,7 @@
 
     <!-- Android 11+: per sapere quali launcher sono installati -->
     <queries>
+        <package android:name="it.romaclubmatera.tema.icone" />
         <!-- i widget che la Home RCM puo' mettere -->
         <intent>
             <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -27,6 +28,8 @@
         </intent>
     </queries>
 
+    <!-- per installare il pacchetto di icone costruito sul telefono (Pacchetto.kt) -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <application
         android:label="Tema RCM"
         android:name="${applicationName}"
@@ -95,6 +98,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+        <receiver android:name=".EsitoInstallazione" android:exported="false" />
         <!-- le app chiedono di fissare un collegamento sulla Home RCM -->
         <activity
             android:name=".PinActivity"

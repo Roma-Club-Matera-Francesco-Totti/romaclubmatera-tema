@@ -23,6 +23,14 @@ class Tema {
   /// Impostazioni › App Home: scegliere (o lasciare) la Home RCM.
   static Future<void> sceltaHome() => _c.invokeMethod('sceltaHome');
 
+  /// Il pacchetto di icone per Theme Park costruito qui (Pacchetto.kt).
+  static Future<Map> pacchettoStato() async => Map.from(await _c.invokeMethod('pacchettoStato'));
+  static Future<void> pacchettoPermesso() => _c.invokeMethod('pacchettoPermesso');
+  static Future<Map> pacchettoCrea() async => Map.from(await _c.invokeMethod('pacchettoCrea'));
+
+  /// Avanzamento ed esito dell'installazione del pacchetto.
+  static void ascolta(Future<dynamic> Function(MethodCall) h) => _c.setMethodCallHandler(h);
+
   static Future<bool> apri(String url) async => await _c.invokeMethod<bool>('apri', {'url': url}) ?? false;
 }
 

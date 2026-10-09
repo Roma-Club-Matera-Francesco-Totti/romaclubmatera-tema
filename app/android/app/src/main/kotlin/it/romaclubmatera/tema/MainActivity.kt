@@ -74,7 +74,9 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "rcm/tema").setMethodCallHandler { call, result ->
+        val canale = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "rcm/tema")
+        Pacchetto.esito = { ok, msg -> runOnUiThread { canale.invokeMethod("pacchettoEsito", mapOf("ok" to ok, "messaggio" to msg)) } }
+        canale.setMethodCallHandler { call, result ->
             when (call.method) {
                 "sfondo" -> {
                     val asset = call.argument<String>("asset")!!
@@ -116,6 +118,24 @@ class MainActivity : FlutterActivity() {
                     } catch (e: ActivityNotFoundException) {
                         result.success(false)
                     }
+                }
+                // il pacchetto di icone per Theme Park con tutte le app (Pacchetto.kt)
+                "pacchettoStato" -> result.success(mapOf(
+                    "installato" to Pacchetto.installato(this),
+                    "permesso" to packageManager.canRequestPackageInstalls()))
+                "pacchettoPermesso" -> {
+                    startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName")))
+                    result.success(true)
+                }
+                "pacchettoCrea" -> thread {
+                    val r = try {
+                        val (apk, n) = Pacchetto.costruisci(this) { i, tot ->
+                            if (i % 10 == 0 || i == tot) runOnUiThread { canale.invokeMethod("pacchettoAvanzamento", mapOf("fatte" to i, "totale" to tot)) }
+                        }
+                        runOnUiThread { Pacchetto.installa(this, apk) }
+                        mapOf("app" to n)
+                    } catch (e: Exception) { mapOf("errore" to (e.message ?: e.javaClass.simpleName)) }
+                    runOnUiThread { result.success(r) }
                 }
                 else -> result.notImplemented()
             }
