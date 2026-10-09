@@ -52,6 +52,9 @@ class HomeActivity : FlutterActivity() {
     // il widget che si sta aggiungendo: aspetta il permesso e la configurazione
     private var inAttesa: MethodChannel.Result? = null
     private var widgetInAttesa = 0
+    private var senzaConfigurare = false
+    private var contattoInAttesa: MethodChannel.Result? = null
+    private var permessoInAttesa: MethodChannel.Result? = null
 
     private val avvisi = object : LauncherApps.Callback() {
         private fun cambiate() = runOnUiThread { canale.invokeMethod("cambiate", null) }
@@ -177,6 +180,8 @@ class HomeActivity : FlutterActivity() {
                     inAttesa?.success(null)
                     inAttesa = result
                     widgetInAttesa = host.allocateAppWidgetId()
+                    // configura=false: si aggiunge "vuoto", lo si sceglie dopo dalle Impostazioni del widget
+                    senzaConfigurare = call.argument<Boolean>("configura") == false
                     if (awm.bindAppWidgetIdIfAllowed(widgetInAttesa, cn)) configura()
                     else startActivityForResult(Intent(AppWidgetManager.ACTION_APPWIDGET_BIND)
                         .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetInAttesa)
@@ -197,6 +202,42 @@ class HomeActivity : FlutterActivity() {
                     val l = p.getString("nuove", null)
                     p.edit().remove("nuove").apply()
                     result.success(l)
+                }
+                // contatto sulla Home: foto (o iniziali) nel bordino
+                "iconaContatto" -> {
+                    val nome = call.argument<String>("nome") ?: ""
+                    val foto = call.argument<String>("foto")
+                    thread {
+                        val png = try {
+                            val d: Drawable = foto?.let {
+                                val b = android.util.Base64.decode(it, android.util.Base64.DEFAULT)
+                                android.graphics.drawable.BitmapDrawable(resources, android.graphics.BitmapFactory.decodeByteArray(b, 0, b.size))
+                            } ?: iniziali(nome)
+                            val bmp = Bitmap.createBitmap(192, 192, Bitmap.Config.ARGB_8888)
+                            cornice(Canvas(bmp), 192f, d)
+                            ByteArrayOutputStream().also { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
+                        } catch (e: Exception) { null }
+                        runOnUiThread { result.success(png) }
+                    }
+                }
+                // il telefono col numero gia' scritto: la chiamata la fa partire chi lo usa
+                "componi" -> {
+                    startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(call.argument<String>("numero")!!))))
+                    result.success(true)
+                }
+                // i Preferiti della Rubrica (serve il permesso di leggere i contatti)
+                "preferiti" -> {
+                    if (checkSelfPermission(android.Manifest.permission.READ_CONTACTS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        permessoInAttesa?.success(null)
+                        permessoInAttesa = result
+                        requestPermissions(arrayOf(android.Manifest.permission.READ_CONTACTS), RQ_CONTATTI)
+                    } else thread { val l = preferiti(); runOnUiThread { result.success(l) } }
+                }
+                // la Rubrica per scegliere un numero (nessun permesso: il risultato e' concesso per questa volta)
+                "scegliContatto" -> {
+                    contattoInAttesa?.success(null)
+                    contattoInAttesa = result
+                    startActivityForResult(Intent(Intent.ACTION_PICK, android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI), RQ_CONTATTO)
                 }
                 "iconaScorciatoia" -> thread {
                     val png = try {
@@ -262,6 +303,10 @@ class HomeActivity : FlutterActivity() {
         when (richiesta) {
             RQ_PERMESSO -> if (esito == RESULT_OK) configura() else finito(false)
             RQ_CONFIGURA -> finito(esito == RESULT_OK)
+            RQ_CONTATTO -> {
+                val r = contattoInAttesa; contattoInAttesa = null
+                r?.success(if (esito == RESULT_OK) dati?.data?.let { contatto(it) } else null)
+            }
         }
     }
 
@@ -301,6 +346,7 @@ class HomeActivity : FlutterActivity() {
 
     // alcuni widget vogliono essere configurati (citta' del meteo, contatto...)
     private fun configura() {
+        if (senzaConfigurare) { finito(true); return }
         val i = awm.getAppWidgetInfo(widgetInAttesa)
         val facoltativa = Build.VERSION.SDK_INT >= 31 &&
             (i?.widgetFeatures ?: 0) and AppWidgetProviderInfo.WIDGET_FEATURE_CONFIGURATION_OPTIONAL != 0
@@ -415,6 +461,68 @@ class HomeActivity : FlutterActivity() {
         return ByteArrayOutputStream().also { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
     }
 
+    override fun onRequestPermissionsResult(rq: Int, permessi: Array<out String>, esiti: IntArray) {
+        super.onRequestPermissionsResult(rq, permessi, esiti)
+        if (rq != RQ_CONTATTI) return
+        val r = permessoInAttesa; permessoInAttesa = null
+        if (esiti.firstOrNull() == android.content.pm.PackageManager.PERMISSION_GRANTED) thread {
+            val l = preferiti(); runOnUiThread { r?.success(l) }
+        } else r?.success(null)
+    }
+
+    /** I Preferiti: nome, cellulare (o il primo numero), foto grande in base64. */
+    private fun preferiti(): List<Map<String, Any?>> {
+        val C = android.provider.ContactsContract.Contacts.CONTENT_URI
+        val out = ArrayList<Map<String, Any?>>()
+        contentResolver.query(C, arrayOf("_id", "display_name"), "starred=1", null, "display_name")?.use { c ->
+            while (c.moveToNext()) {
+                val id = c.getLong(0)
+                var numero: String? = null
+                contentResolver.query(android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                    arrayOf("data1", "data2", "is_super_primary"), "contact_id=?", arrayOf(id.toString()),
+                    "is_super_primary DESC")?.use { n ->
+                    while (n.moveToNext()) {
+                        if (numero == null) numero = n.getString(0)
+                        if (n.getInt(1) == 2) { numero = n.getString(0); break } // 2 = cellulare
+                    }
+                }
+                if (numero == null) continue
+                val foto = try {
+                    android.provider.ContactsContract.Contacts.openContactPhotoInputStream(contentResolver,
+                        android.content.ContentUris.withAppendedId(C, id), true)?.use { it.readBytes() }
+                } catch (e: Exception) { null }?.let { android.util.Base64.encodeToString(it, android.util.Base64.NO_WRAP) }
+                out += mapOf("nome" to c.getString(1), "numero" to numero, "foto" to foto)
+            }
+        }
+        return out
+    }
+
+    /** Nome, numero e foto del numero scelto in Rubrica. */
+    private fun contatto(uri: Uri): Map<String, Any?>? {
+        contentResolver.query(uri, arrayOf("display_name", "data1", "photo_uri"), null, null, null)?.use { c ->
+            if (!c.moveToFirst()) return null
+            val foto = c.getString(2)?.let { u ->
+                try { contentResolver.openInputStream(Uri.parse(u))?.use { it.readBytes() } } catch (e: Exception) { null }
+            }?.let { android.util.Base64.encodeToString(it, android.util.Base64.NO_WRAP) }
+            return mapOf("nome" to c.getString(0), "numero" to c.getString(1), "foto" to foto)
+        }
+        return null
+    }
+
+    /** Senza foto: le iniziali in oro su rosso scuro. */
+    private fun iniziali(nome: String): Drawable {
+        val b = Bitmap.createBitmap(192, 192, Bitmap.Config.ARGB_8888)
+        val c = Canvas(b)
+        c.drawColor(Color.rgb(0x3a, 0x0a, 0x12))
+        val t = nome.split(' ').filter { it.isNotBlank() }.take(2).joinToString("") { it.take(1).uppercase() }
+        val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.rgb(0xe3, 0xad, 0x1e); textSize = 84f; textAlign = android.graphics.Paint.Align.CENTER
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+        }
+        c.drawText(t, 96f, 96f - (p.descent() + p.ascent()) / 2, p)
+        return android.graphics.drawable.BitmapDrawable(resources, b)
+    }
+
     /**
      * Come personale/cornice.py: tondo rosso sfumato, l'icona originale
      * ritagliata a cerchio, filetto oro. Le icone adattive si disegnano a
@@ -466,6 +574,8 @@ class HomeActivity : FlutterActivity() {
         const val RQ_PERMESSO = 71
         const val RQ_CONFIGURA = 72
         const val RQ_RICONFIGURA = 73
+        const val RQ_CONTATTO = 74
+        const val RQ_CONTATTI = 75
         /** PinActivity avvisa la Home quando arriva un collegamento nuovo. */
         var nuove: (() -> Unit)? = null
     }

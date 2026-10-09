@@ -52,6 +52,8 @@ class Voce {
     this.id,
     this.provider,
     this.sc,
+    this.numero,
+    this.foto,
   }) : apps = apps ?? [];
   final String tipo; // app, cartella, widget, orologio, scorciatoia
   int x, y, w, h;
@@ -61,6 +63,7 @@ class Voce {
   int? id; // widget: id di AppWidgetHost
   String? provider;
   String? sc; // scorciatoia fissata: il suo id (app = il pacchetto)
+  String? numero, foto; // contatto: numero e foto (base64), letti quando lo si sceglie
 
   Map<String, dynamic> json() => {
     'tipo': tipo,
@@ -74,6 +77,8 @@ class Voce {
     'id': ?id,
     'provider': ?provider,
     'sc': ?sc,
+    'numero': ?numero,
+    'foto': ?foto,
   };
 
   factory Voce.da(Map m) => Voce(
@@ -88,6 +93,8 @@ class Voce {
     id: m['id'],
     provider: m['provider'],
     sc: m['sc'],
+    numero: m['numero'],
+    foto: m['foto'],
   );
 
   bool copre(int cx, int cy) => cx >= x && cx < x + w && cy >= y && cy < y + h;
@@ -122,7 +129,8 @@ class _Nativo {
   static Future<List<Map>> widgetDisponibili() async => await c.invokeListMethod<Map>('widgetDisponibili') ?? [];
   static Future<Uint8List?> anteprima(String p) =>
       _anteprime.putIfAbsent(p, () => c.invokeMethod<Uint8List>('anteprimaWidget', {'provider': p}));
-  static Future<int?> aggiungiWidget(String p) => c.invokeMethod<int>('aggiungiWidget', {'provider': p});
+  static Future<int?> aggiungiWidget(String p, {bool configura = true}) =>
+      c.invokeMethod<int>('aggiungiWidget', {'provider': p, 'configura': configura});
   static Future<void> rimuoviWidget(int id) => c.invokeMethod('rimuoviWidget', {'id': id});
   static Future<List<Map>> scorciatoie(App a) async =>
       await c.invokeListMethod<Map>('scorciatoie', {'pacchetto': a.pacchetto, 'attivita': a.attivita}) ?? [];
@@ -133,6 +141,16 @@ class _Nativo {
     '$pacchetto/$id',
     () => c.invokeMethod<Uint8List>('iconaScorciatoia', {'pacchetto': pacchetto, 'id': id}),
   );
+  static final _iconeContatti = <String, Future<Uint8List?>>{};
+  static Future<Uint8List?> iconaContatto(Voce v) => _iconeContatti.putIfAbsent(
+    '${v.numero}/${v.nome}/${v.foto?.length}',
+    () => c.invokeMethod<Uint8List>('iconaContatto', {'nome': v.nome, 'foto': v.foto}),
+  );
+
+  /// Apre il telefono col numero gia' scritto: la chiamata parte solo col tasto verde.
+  static Future<void> componi(String numero) => c.invokeMethod('componi', {'numero': numero});
+  static Future<Map?> scegliContatto() => c.invokeMapMethod('scegliContatto');
+  static Future<List<Map>?> preferiti() => c.invokeListMethod<Map>('preferiti');
   static Future<String?> nuove() => c.invokeMethod<String>('nuove');
   static Future<bool> configuraWidget(int id) async =>
       await c.invokeMethod<bool>('configuraWidget', {'id': id}) ?? false;
@@ -379,22 +397,53 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
           final apps = [for (final n in v['apps']) ?daNome(n)];
           return apps.isEmpty ? null : Voce('cartella', x: x, y: y, apps: apps, nome: v['nome'] ?? 'Cartella');
         case 'widget':
-          final id = await _Nativo.aggiungiWidget(v['provider']);
+          final id = await _Nativo.aggiungiWidget(v['provider'], configura: v['configura'] ?? true);
           if (id == null) mancanti.add('widget ${v['provider'].split('.').last}');
           return id == null
               ? null
               : Voce('widget', x: x, y: y, w: v['w'] ?? 1, h: v['h'] ?? 1, id: id, provider: v['provider']);
         case 'orologio':
           return Voce('orologio', x: x, y: y, w: _colonne, h: 2);
+        case 'contatto':
+          return Voce('contatto', x: x, y: y, nome: v['nome'] ?? '', numero: v['numero'], foto: v['foto']);
       }
       return null;
     }
 
-    pagine = [
-      for (final p in m['pagine']) [for (final v in p) ?await voce(v)],
-    ];
-    if (pagine.isEmpty) pagine = [[]];
-    dock = [for (final v in m['dock']) ?await voce(v)];
+    if (m['inserisci'] != null) {
+      // una pagina rimessa al suo posto (indice), le altre restano com'erano
+      final i = (m['inserisci'] as int).clamp(0, pagine.length);
+      pagine.insert(i, [for (final v in m['pagine'].first) ?await voce(v)]);
+    } else if (m['paginaPreferiti'] == true) {
+      // l'ultima pagina (coi widget Rubrica) lascia il posto ai Preferiti
+      for (final v in pagine.last) {
+        if (v.tipo == 'widget' && v.id != null) _Nativo.rimuoviWidget(v.id!);
+      }
+      pagine.last = [];
+      await _Nativo.cancella('importa');
+      await paginaPreferiti(ordine: List<String>.from(m['ordine'] ?? []));
+      return;
+    } else if (m['sostituisciUltima'] == true) {
+      // l'ultima pagina si rifa' da capo (i suoi widget si tolgono)
+      for (final v in pagine.last) {
+        if (v.tipo == 'widget' && v.id != null) _Nativo.rimuoviWidget(v.id!);
+      }
+      pagine.last = [for (final v in m['pagine'].first) ?await voce(v)];
+    } else if (m['aggiungi'] == true) {
+      // si aggiunge in fondo (nell'ultima pagina se e' vuota), il resto resta com'e'
+      final nuove = [for (final v in m['pagine'].first) ?await voce(v)];
+      if (pagine.last.isEmpty) {
+        pagine.last.addAll(nuove);
+      } else {
+        pagine.add(nuove);
+      }
+    } else {
+      pagine = [
+        for (final p in m['pagine']) [for (final v in p) ?await voce(v)],
+      ];
+      if (pagine.isEmpty) pagine = [[]];
+      dock = [for (final v in m['dock']) ?await voce(v)];
+    }
     await _Nativo.cancella('importa');
     await salva();
     if (mancanti.isNotEmpty && mounted) {
@@ -686,7 +735,7 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
           (Icons.folder_open, 'Apri e rinomina', () => apriCartella(v)),
           (Icons.remove_circle_outline, 'Togli la cartella (le app restano nel cassetto)', () => togli(v)),
         ]);
-      case 'scorciatoia':
+      case 'scorciatoia' || 'contatto':
         await foglio(Text(v.nome, style: Stile.titolo(17)), [
           (Icons.remove_circle_outline, 'Togli dalla Home', () => togli(v)),
         ]);
@@ -752,6 +801,55 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
   }
 
   int get paginaInModifica => (pcm.hasClients ? pcm.page?.round() : null) ?? pagina;
+
+  Future<void> aggiungiContatto(int n) async {
+    final c = await _Nativo.scegliContatto();
+    if (c == null || c['numero'] == null || !mounted) return;
+    setState(
+      () => metti(
+        Voce('contatto', nome: c['nome'] ?? '', numero: c['numero'], foto: c['foto']),
+        da: n,
+      ),
+    );
+    salva();
+  }
+
+  /// Una pagina nuova in fondo con i Preferiti della Rubrica (tocco = numero gia' scritto).
+  Future<void> paginaPreferiti({List<String>? ordine}) async {
+    final l = await _Nativo.preferiti();
+    if (l == null || l.isEmpty || !mounted) return;
+    if (ordine != null) {
+      int pos(Map c) {
+        final i = ordine.indexOf(c['nome']);
+        return i < 0 ? 999 : i;
+      }
+
+      l.sort((a, b) => pos(a).compareTo(pos(b)));
+    }
+    final pg = [
+      for (final (i, c) in l.take(_colonne * _righe).indexed)
+        Voce(
+          'contatto',
+          x: i % _colonne,
+          y: i ~/ _colonne,
+          nome: c['nome'] ?? '',
+          numero: c['numero'],
+          foto: c['foto'],
+        ),
+    ];
+    setState(() {
+      if (pagine.last.isEmpty) {
+        pagine.last.addAll(pg);
+      } else {
+        pagine.add(pg);
+      }
+    });
+    salva();
+    final n = pagine.length - 1;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (pc.hasClients) pc.animateToPage(n, duration: const Duration(milliseconds: 300), curve: Curves.easeOutCubic);
+    });
+  }
 
   Future<void> togliPagina(int i) async {
     if (pagine.length < 2) return;
@@ -887,6 +985,14 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
               ),
             ]),
           ),
+          tasto(Icons.person_add_alt, 'Contatti', () {
+            final n = paginaInModifica.clamp(0, pagine.length - 1);
+            esci(n);
+            foglio(null, [
+              (Icons.person_add_alt, 'Scegli un contatto', () => aggiungiContatto(n)),
+              (Icons.star_outline, 'Una pagina con i Preferiti della Rubrica', paginaPreferiti),
+            ]);
+          }),
           tasto(Icons.widgets_outlined, 'Widget', () {
             final n = paginaInModifica.clamp(0, pagine.length - 1);
             esci(n);
@@ -1106,6 +1212,7 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
       'cartella' => (_IconaCartella(v, perChiave, etichetta: etichetta), () => apriCartella(v)),
       'widget' => (Padding(padding: const EdgeInsets.all(6), child: _VistaWidget(v.id!, cella)), null),
       'scorciatoia' => (_LancioSc(v, etichetta: etichetta), () => _Nativo.avviaScorciatoia(v.app!, v.sc!)),
+      'contatto' => (_LancioContatto(v, etichetta: etichetta), () => _Nativo.componi(v.numero!)),
       _ => (const FittedBox(fit: BoxFit.scaleDown, child: _Orologio()), null),
     };
     return _Presa(key: ObjectKey(v), tocco: tocco, inizio: (g, l, s) => inizia(v, da, g, l, s), child: figlio);
@@ -1180,6 +1287,7 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
       'app' => _Icona(perChiave[f.v.app]!),
       'cartella' => _IconaCartella(f.v, perChiave, etichetta: false),
       'scorciatoia' => _LancioSc(f.v, etichetta: false),
+      'contatto' => _LancioContatto(f.v, etichetta: false),
       'orologio' => const FittedBox(child: _Orologio()),
       _ => DecoratedBox(
         decoration: BoxDecoration(
@@ -1558,6 +1666,43 @@ class _LancioSc extends StatelessWidget {
           future: _Nativo.iconaScorciatoia(v.app!, v.sc!),
           builder: (_, s) => s.data == null
               ? const Icon(Icons.link, color: Stile.oro)
+              : Image.memory(s.data!, gaplessPlayback: true, filterQuality: FilterQuality.medium),
+        ),
+      ),
+      if (etichetta) ...[
+        const SizedBox(height: 5),
+        SizedBox(
+          width: 80,
+          child: Text(
+            v.nome,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: _ombraTesto,
+          ),
+        ),
+      ],
+    ],
+  );
+}
+
+/// Un contatto: la sua foto (o le iniziali) nel bordino del Club.
+class _LancioContatto extends StatelessWidget {
+  const _LancioContatto(this.v, {this.etichetta = true});
+  final Voce v;
+  final bool etichetta;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      SizedBox(
+        width: _lato,
+        height: _lato,
+        child: FutureBuilder(
+          future: _Nativo.iconaContatto(v),
+          builder: (_, s) => s.data == null
+              ? const Icon(Icons.person, color: Stile.oro)
               : Image.memory(s.data!, gaplessPlayback: true, filterQuality: FilterQuality.medium),
         ),
       ),

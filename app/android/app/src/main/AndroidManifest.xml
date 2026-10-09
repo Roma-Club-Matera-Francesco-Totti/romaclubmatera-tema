@@ -29,6 +29,8 @@
 
     <!-- la Home apre il pannello delle notifiche scorrendo verso il basso -->
     <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
+    <!-- solo se chi la usa crea la pagina dei Preferiti (Home RCM) -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <application
         android:label="Tema RCM"
         android:name="${applicationName}"
