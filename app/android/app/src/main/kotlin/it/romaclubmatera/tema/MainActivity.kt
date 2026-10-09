@@ -1,6 +1,12 @@
 package it.romaclubmatera.tema
 
 import android.app.WallpaperManager
+import android.content.pm.LauncherApps
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.os.Bundle
+import android.os.Process
+import java.io.File
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -33,6 +39,33 @@ class MainActivity : FlutterActivity() {
         // non e' un launcher: serve a sapere a che punto e' un Samsung
         "com.samsung.android.goodlock" to "Good Lock",
     )
+
+    /**
+     * Per il pacchetto personale (personale/genera.sh): con l'extra
+     * "esporta_icone" salva l'icona originale di ogni app installata in
+     * Android/data/<app>/files/icone/<pacchetto>__<attivita'>.png (288 px).
+     * Restano sul telefono; le prende adb.
+     */
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (intent?.getBooleanExtra("esporta_icone", false) == true) thread { esportaIcone() }
+    }
+
+    private fun esportaIcone() {
+        val dir = File(getExternalFilesDir(null), "icone").apply { deleteRecursively(); mkdirs() }
+        val la = getSystemService(LAUNCHER_APPS_SERVICE) as LauncherApps
+        for (a in la.getActivityList(null, Process.myUserHandle())) {
+            try {
+                val d = a.getIcon(640)
+                val b = Bitmap.createBitmap(288, 288, Bitmap.Config.ARGB_8888)
+                d.setBounds(0, 0, 288, 288); d.draw(Canvas(b))
+                File(dir, "${a.componentName.packageName}__${a.componentName.className}.png").outputStream().use {
+                    b.compress(Bitmap.CompressFormat.PNG, 100, it)
+                }
+            } catch (e: Exception) { }
+        }
+        File(dir, "FATTO").writeText("ok")
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
