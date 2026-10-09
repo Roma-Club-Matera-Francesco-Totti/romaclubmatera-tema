@@ -27,6 +27,8 @@
         </intent>
     </queries>
 
+    <!-- la Home apre il pannello delle notifiche scorrendo verso il basso -->
+    <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
     <application
         android:label="Tema RCM"
         android:name="${applicationName}"

@@ -69,19 +69,19 @@ class _PaginaApplicaState extends State<PaginaApplica> with WidgetsBindingObserv
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(
               attiva
-                  ? 'La Home RCM è la tua Home: tutte le app hanno le icone del Club. '
+                  ? 'La Home RCM è la tua Home: tutte le app hanno la loro icona nel bordino del Club. '
                       'Per tornare alla Home di prima scegli un\'altra app Home.'
                   : 'Il modo più semplice: usa la Home del Club al posto di quella del telefono. Tutte le app '
-                      'prendono le icone del Club, su qualunque telefono, senza installare altro.',
+                      'tengono la loro icona, dentro il bordino del Club, su qualunque telefono.',
               style: Stile.testo(15)),
           const SizedBox(height: 8),
           Text('Ci sono pagine, cartelle, widget (anche il meteo), dock e cassetto con la ricerca. Tieni premuto '
-              'per spostare, trascina un\'app sopra un\'altra per fare una cartella, tieni premuto su uno spazio '
-              'vuoto per i widget. Si torna indietro quando vuoi da Impostazioni › App › App predefinite › App Home.',
+              'per spostare, trascina un\'app sopra un\'altra per fare una cartella; stringi con due dita (o tieni '
+              'premuto su uno spazio vuoto) per pagine, widget e sfondi, come sulla Home Samsung. Si torna indietro quando vuoi da Impostazioni › App › App predefinite › App Home.',
               style: Stile.sotto(13)),
           const SizedBox(height: 12),
           Pulsante(attiva ? 'Cambia app Home' : 'Usa la Home RCM',
-              pieno: !attiva, icona: Icons.home_outlined, onPressed: Tema.sceltaHome),
+              pieno: !attiva, icona: Icons.home_outlined, onPressed: attiva ? Tema.sceltaHome : Tema.chiediHome),
         ]),
       );
 
@@ -136,6 +136,7 @@ class _PaginaApplicaState extends State<PaginaApplica> with WidgetsBindingObserv
                 'Su Android 12 e successivi anche menu e pulsanti prendono i colori giallorossi.',
                 style: Stile.testo(15)),
           ),
+          if (homeRcmPronta) _TuoTelefono(attiva: s.data!.predefinito == 'it.romaclubmatera.tema'),
           if (homeRcmPronta) _homeRcm(s.data!.predefinito == 'it.romaclubmatera.tema'),
           for (final p in launcher)
             _Scheda(
@@ -197,6 +198,66 @@ class _Scheda extends StatelessWidget {
         const SizedBox(height: 12),
         child,
       ]),
+    );
+  }
+}
+
+/// In cima alla scheda Applica: che telefono e', cosa conviene, un pulsante.
+/// I consigli per marca sono quelli noti al 10/10/2026 (Home di terze parti
+/// su One UI, HyperOS, ColorOS...): da ritoccare se cambiano.
+class _TuoTelefono extends StatelessWidget {
+  const _TuoTelefono({required this.attiva});
+  final bool attiva;
+
+  static String consiglio(String marca, int navigazione) {
+    final m = marca.toLowerCase();
+    if (m.contains('samsung')) {
+      return 'La Home del Club funziona come quella Samsung: gesti, widget (anche il meteo Samsung), cartelle. '
+          'Se preferisci restare sulla Home Samsung, più sotto trovi Theme Park: lì il bordino del Club va solo sulle app del pacchetto.';
+    }
+    if (m.contains('xiaomi') || m.contains('redmi') || m.contains('poco')) {
+      return 'Funziona. Su alcuni Xiaomi, con una Home diversa da quella di serie, i gesti di navigazione '
+          '${navigazione == 2 ? 'che usi ora ' : ''}vengono sostituiti dai tasti in basso. Metti anche Tema RCM in '
+          'Impostazioni › App › Tema RCM › Risparmio batteria › Nessuna restrizione, così il telefono non la chiude.';
+    }
+    if (m.contains('oppo') || m.contains('realme') || m.contains('oneplus')) {
+      return 'Funziona. Metti Tema RCM fra le app senza limiti di batteria (Impostazioni › Batteria), '
+          'altrimenti il telefono potrebbe chiuderla e tornare alla sua Home.';
+    }
+    if (m.contains('huawei') || m.contains('honor')) {
+      return 'Funziona. Se il telefono rimette la sua Home, scegli di nuovo Tema RCM in Impostazioni › App › App predefinite.';
+    }
+    if (m.contains('motorola') || m.contains('google') || m.contains('nothing')) {
+      return 'È Android quasi puro: la Home del Club funziona con tutti i gesti, i widget e le notifiche.';
+    }
+    return 'La Home del Club funziona su qualunque Android dalla versione 8: gesti, widget, cartelle.';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: Tema.telefono(),
+      builder: (context, s) {
+        if (!s.hasData) return const SizedBox();
+        final t = s.data!;
+        final marca = '${t['marca']}';
+        final nome = '${marca[0].toUpperCase()}${marca.substring(1)} ${t['modello']} · Android ${t['android']}';
+        final c = consiglio(marca, t['navigazione'] ?? -1);
+        return _Scheda(
+          titolo: 'Il tuo telefono',
+          icona: Icons.smartphone,
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(nome, style: Stile.sotto(14)),
+            const SizedBox(height: 8),
+            Text(attiva ? 'Stai usando la Home del Club. $c' : 'Per avere il bordino del Club su tutte le app usa la Home del Club. $c',
+                style: Stile.testo(15)),
+            if (!attiva) ...[
+              const SizedBox(height: 12),
+              const Pulsante('Usa la Home del Club', icona: Icons.home_outlined, onPressed: Tema.chiediHome),
+            ],
+          ]),
+        );
+      },
     );
   }
 }

@@ -23,6 +23,11 @@ class Tema {
   /// Impostazioni › App Home: scegliere (o lasciare) la Home RCM.
   static Future<void> sceltaHome() => _c.invokeMethod('sceltaHome');
 
+  static Future<Map> telefono() async => Map.from(await _c.invokeMethod('telefono'));
+
+  /// La finestra di Android per scegliere Tema RCM come app Home.
+  static Future<void> chiediHome() => _c.invokeMethod('chiediHome');
+
   static Future<bool> apri(String url) async => await _c.invokeMethod<bool>('apri', {'url': url}) ?? false;
 }
 

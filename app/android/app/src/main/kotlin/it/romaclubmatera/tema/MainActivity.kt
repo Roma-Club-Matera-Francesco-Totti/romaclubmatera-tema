@@ -4,6 +4,7 @@ import android.app.WallpaperManager
 import android.content.pm.LauncherApps
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.os.Build
 import android.os.Bundle
 import android.os.Process
 import java.io.File
@@ -108,6 +109,21 @@ class MainActivity : FlutterActivity() {
                     result.success(mapOf("predefinito" to predefinito, "installati" to installati))
                 }
                 "applica" -> result.success(applica(call.argument<String>("pacchetto")!!))
+                // marca, modello, Android e navigazione: l'app consiglia la strada giusta
+                "telefono" -> result.success(mapOf(
+                    "marca" to Build.MANUFACTURER, "modello" to Build.MODEL, "android" to Build.VERSION.RELEASE,
+                    "sdk" to Build.VERSION.SDK_INT,
+                    "navigazione" to Settings.Secure.getInt(contentResolver, "navigation_mode", -1)))
+                // la finestra di Android "usare Tema RCM come app Home?"; se non c'e', le Impostazioni
+                "chiediHome" -> {
+                    val rm = if (Build.VERSION.SDK_INT >= 29) getSystemService(android.app.role.RoleManager::class.java) else null
+                    if (rm != null && rm.isRoleAvailable(android.app.role.RoleManager.ROLE_HOME) &&
+                        !rm.isRoleHeld(android.app.role.RoleManager.ROLE_HOME)) {
+                        try { startActivityForResult(rm.createRequestRoleIntent(android.app.role.RoleManager.ROLE_HOME), 81) }
+                        catch (e: Exception) { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)) }
+                    } else startActivity(Intent(Settings.ACTION_HOME_SETTINGS))
+                    result.success(true)
+                }
                 "sceltaHome" -> { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)); result.success(true) }
                 "apri" -> {
                     try {

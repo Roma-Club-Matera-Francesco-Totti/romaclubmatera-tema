@@ -131,6 +131,14 @@ class HomeActivity : FlutterActivity() {
                     startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
                     result.success(true)
                 }
+                // scorrendo verso il basso sulla Home si apre il pannello, come su ogni Home
+                "notifiche" -> {
+                    try {
+                        val sb = getSystemService("statusbar")
+                        Class.forName("android.app.StatusBarManager").getMethod("expandNotificationsPanel").invoke(sb)
+                        result.success(true)
+                    } catch (e: Exception) { result.success(false) }
+                }
                 "sceltaHome" -> { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)); result.success(true) }
                 // la scelta dello sfondo del telefono: galleria, sfondi di sistema...
                 "sfondoTuo" -> {

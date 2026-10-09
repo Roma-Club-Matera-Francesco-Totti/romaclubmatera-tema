@@ -220,6 +220,9 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
   _Bersaglio? bersaglio;
   Size cella = const Size(90, 110);
   bool paginaDelVolo = false;
+  // modalita' modifica, come sulla Home Samsung: pagine in piccolo, cestino, "+"
+  bool modifica = false;
+  final pcm = PageController(viewportFraction: .8);
   // due dita che si stringono, come sulla Home Samsung: si apre il menu
   final _dita = <int, Offset>{};
   double? _distanza0;
@@ -241,7 +244,7 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
       _pizzicato = false;
     } else if (!_pizzicato && volo == null && cass.value == 0 && d < _distanza0! * .7) {
       _pizzicato = true;
-      menuHome();
+      entra();
     }
   } // una casella della griglia, in dp (per i widget)
 
@@ -261,6 +264,10 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
         await carica();
       } else if (call.method == 'home') {
         Navigator.of(context).popUntil((r) => r.isFirst);
+        if (modifica) {
+          esci();
+          return;
+        }
         if (cass.value > 0) {
           cass.animateBack(0);
         } else if (pc.hasClients && pagina != 0) {
@@ -275,6 +282,7 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
   void dispose() {
     cass.dispose();
     pc.dispose();
+    pcm.dispose();
     super.dispose();
   }
 
@@ -467,6 +475,7 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
   }
 
   void inizia(Voce v, String da, Offset globale, Offset locale, Size dim) {
+    if (modifica) return;
     HapticFeedback.mediumImpact();
     final p = pagina;
     if (da == 'pagina') pagine[p].remove(v);
@@ -702,33 +711,6 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
   }
 
   Future<void> menuHome() => foglio(null, [
-    (Icons.widgets_outlined, 'Widget', sceltaWidget),
-    (
-      Icons.add_to_photos_outlined,
-      'Aggiungi una pagina',
-      () {
-        setState(() => pagine.add([]));
-        salva();
-        final n = pagine.length - 1;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (pc.hasClients) {
-            pc.animateToPage(n, duration: const Duration(milliseconds: 300), curve: Curves.easeOutCubic);
-          }
-        });
-      },
-    ),
-    if (pagine.length > 1 && pagine[pagina].isEmpty)
-      (
-        Icons.delete_sweep_outlined,
-        'Togli questa pagina (è vuota)',
-        () {
-          setState(() {
-            pagine.removeAt(pagina);
-            if (pagina >= pagine.length) pagina = pagine.length - 1;
-          });
-          salva();
-        },
-      ),
     if (!pagine.expand((p) => p).any((v) => v.tipo == 'orologio'))
       (
         Icons.schedule,
@@ -744,10 +726,182 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
         'Pallini delle notifiche (attiva «Home RCM»)',
         () => _Nativo.c.invokeMethod('permessoPallini'),
       ),
-    (Icons.wallpaper, 'Sfondi del Club (Tema RCM)', () => _Nativo.c.invokeMethod('temaRcm')),
-    (Icons.photo_library_outlined, 'Cambia sfondo (anche una tua foto)', () => _Nativo.c.invokeMethod('sfondoTuo')),
     (Icons.home_outlined, 'Cambia app Home', () => _Nativo.c.invokeMethod('sceltaHome')),
   ]);
+
+  // ---------- modalita' modifica ----------
+
+  void entra() {
+    if (modifica || volo != null) return;
+    HapticFeedback.mediumImpact();
+    setState(() => modifica = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (pcm.hasClients) pcm.jumpToPage(pagina);
+    });
+  }
+
+  void esci([int? i]) {
+    final n = (i ?? (pcm.hasClients ? pcm.page?.round() : null) ?? pagina).clamp(0, pagine.length - 1);
+    setState(() {
+      modifica = false;
+      pagina = n;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (pc.hasClients) pc.jumpToPage(n);
+    });
+  }
+
+  int get paginaInModifica => (pcm.hasClients ? pcm.page?.round() : null) ?? pagina;
+
+  Future<void> togliPagina(int i) async {
+    if (pagine.length < 2) return;
+    if (pagine[i].isNotEmpty) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Stile.superficie,
+          title: Text('TOGLIERE LA PAGINA?', style: Stile.titolo(18)),
+          content: Text(
+            'Le app restano nel cassetto; i widget di questa pagina vanno rimessi.',
+            style: Stile.testo(15),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')),
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('TOGLI')),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    for (final v in pagine[i]) {
+      if (v.tipo == 'widget' && v.id != null) _Nativo.rimuoviWidget(v.id!);
+    }
+    setState(() {
+      pagine.removeAt(i);
+      if (pagina >= pagine.length) pagina = pagine.length - 1;
+    });
+    salva();
+  }
+
+  void aggiungiPagina() {
+    setState(() => pagine.add([]));
+    salva();
+    final n = pagine.length - 1;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (pcm.hasClients) pcm.animateToPage(n, duration: const Duration(milliseconds: 300), curve: Curves.easeOutCubic);
+    });
+  }
+
+  Widget cornicePagina({required Widget child, VoidCallback? tocco}) => GestureDetector(
+    onTap: tocco,
+    child: DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: .25),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Stile.oro.withValues(alpha: .7), width: 1.5),
+      ),
+      child: ClipRRect(borderRadius: BorderRadius.circular(22), child: child),
+    ),
+  );
+
+  Widget editor() => LayoutBuilder(
+    builder: (_, c) {
+      final area = Size(c.maxWidth, c.maxHeight - 52);
+      return PageView.builder(
+        controller: pcm,
+        itemCount: pagine.length + 1,
+        itemBuilder: (_, i) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 52,
+                child: i == pagine.length
+                    ? null
+                    : IconButton(
+                        tooltip: 'Togli la pagina',
+                        onPressed: pagine.length > 1 ? () => togliPagina(i) : null,
+                        icon: const Icon(Icons.delete_outline),
+                        color: Stile.panna,
+                      ),
+              ),
+              Expanded(
+                child: i == pagine.length
+                    ? cornicePagina(
+                        tocco: aggiungiPagina,
+                        child: const Center(child: Icon(Icons.add_circle_outline, color: Stile.oro, size: 64)),
+                      )
+                    : cornicePagina(
+                        tocco: () => esci(i),
+                        child: IgnorePointer(
+                          child: FittedBox(
+                            child: SizedBox.fromSize(size: area, child: unaPagina(i)),
+                          ),
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+
+  Widget barraModifica() {
+    Widget tasto(IconData i, String t, VoidCallback f) => Expanded(
+      child: InkWell(
+        onTap: f,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(i, color: Stile.oro),
+              const SizedBox(height: 4),
+              Text(t, style: Stile.testo(12.5)),
+            ],
+          ),
+        ),
+      ),
+    );
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: .45),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Stile.oro.withValues(alpha: .35), width: .8),
+      ),
+      child: Row(
+        children: [
+          tasto(
+            Icons.wallpaper,
+            'Sfondi',
+            () => foglio(null, [
+              (Icons.wallpaper, 'Sfondi del Club (Tema RCM)', () => _Nativo.c.invokeMethod('temaRcm')),
+              (
+                Icons.photo_library_outlined,
+                'Una tua foto o un altro sfondo',
+                () => _Nativo.c.invokeMethod('sfondoTuo'),
+              ),
+            ]),
+          ),
+          tasto(Icons.widgets_outlined, 'Widget', () {
+            final n = paginaInModifica.clamp(0, pagine.length - 1);
+            esci(n);
+            sceltaWidget();
+          }),
+          tasto(Icons.settings_outlined, 'Impostazioni', () {
+            final n = paginaInModifica.clamp(0, pagine.length - 1);
+            esci(n);
+            menuHome();
+          }),
+          tasto(Icons.check, 'Fatto', esci),
+        ],
+      ),
+    );
+  }
 
   // ---------- cartelle ----------
 
@@ -965,7 +1119,7 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
       return Stack(
         children: [
           Positioned.fill(
-            child: GestureDetector(behavior: HitTestBehavior.translucent, onLongPress: menuHome),
+            child: GestureDetector(behavior: HitTestBehavior.translucent, onLongPress: entra),
           ),
           if (f != null && b != null && !b.dock && !b.cestino && i == pagina)
             Positioned(left: b.x * cw, top: b.y * ch, width: f.v.w * cw, height: f.v.h * ch, child: const _Segno()),
@@ -1054,6 +1208,7 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (_, _) {
+        if (modifica) esci();
         if (cass.value > 0) cass.animateBack(0);
       },
       // il trascinamento lo segue la Home intera: l'oggetto preso sparisce
@@ -1092,6 +1247,7 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
                     behavior: HitTestBehavior.translucent,
                     onVerticalDragEnd: (d) {
                       if ((d.primaryVelocity ?? 0) < -250) cass.forward();
+                      if ((d.primaryVelocity ?? 0) > 250 && !modifica) _Nativo.c.invokeMethod('notifiche');
                     },
                     child: Column(
                       children: [
@@ -1100,6 +1256,8 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
                             padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
                             child: !pronta
                                 ? const SizedBox()
+                                : modifica
+                                ? editor()
                                 : PageView.builder(
                                     key: _griglia,
                                     controller: pc,
@@ -1109,31 +1267,32 @@ class _HomeState extends State<_Home> with TickerProviderStateMixin {
                                   ),
                           ),
                         ),
-                        SizedBox(
-                          height: 22,
-                          child: pagine.length < 2
-                              ? GestureDetector(
-                                  onTap: cass.forward,
-                                  child: const Icon(Icons.keyboard_arrow_up, color: Stile.oro, size: 22),
-                                )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    for (var i = 0; i < pagine.length; i++)
-                                      AnimatedContainer(
-                                        duration: const Duration(milliseconds: 200),
-                                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                                        width: i == pagina ? 18 : 7,
-                                        height: 7,
-                                        decoration: BoxDecoration(
-                                          color: i == pagina ? Stile.oro : Stile.panna.withValues(alpha: .5),
-                                          borderRadius: BorderRadius.circular(4),
+                        if (!modifica)
+                          SizedBox(
+                            height: 22,
+                            child: pagine.length < 2
+                                ? GestureDetector(
+                                    onTap: cass.forward,
+                                    child: const Icon(Icons.keyboard_arrow_up, color: Stile.oro, size: 22),
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      for (var i = 0; i < pagine.length; i++)
+                                        AnimatedContainer(
+                                          duration: const Duration(milliseconds: 200),
+                                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                                          width: i == pagina ? 18 : 7,
+                                          height: 7,
+                                          decoration: BoxDecoration(
+                                            color: i == pagina ? Stile.oro : Stile.panna.withValues(alpha: .5),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
                                         ),
-                                      ),
-                                  ],
-                                ),
-                        ),
-                        barraDock(),
+                                    ],
+                                  ),
+                          ),
+                        modifica ? barraModifica() : barraDock(),
                       ],
                     ),
                   ),
