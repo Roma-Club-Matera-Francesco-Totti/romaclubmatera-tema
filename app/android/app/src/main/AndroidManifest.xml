@@ -66,10 +66,13 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
-        <!-- La Home del Club: launcher vero, si sceglie in Impostazioni ›
+        <!-- Spenta (enabled=false) finche' non ha cartelle e widget: Michele l'ha
+             provata il 09/10/2026 e senza meteo e cartelle e' tornato a One UI.
+             La Home del Club: launcher vero, si sceglie in Impostazioni ›
              App predefinite › App Home. Disegnata sopra lo sfondo del telefono. -->
         <activity
             android:name=".HomeActivity"
+            android:enabled="false"
             android:exported="true"
             android:label="Home RCM"
             android:launchMode="singleTask"

@@ -38,6 +38,14 @@ maglie (AS Roma, Kappa): quei loghi restano dei rispettivi titolari e **sono
 esclusi dalla licenza CC BY 4.0**; gli sfondi si possono usare solo così come
 sono, per uso personale.
 
+## Escluse dalla licenza: le icone delle app diffuse
+
+`icone/loghi/` (e nel pacchetto `rcm_l_*`) contiene l'icona originale di
+alcune app molto diffuse dentro la cornice del Club, perché il telefono le
+riconosca e le mostri uniformi. Quei loghi sono dei rispettivi titolari,
+servono solo a indicare l'app che si apre e **non sono concessi** con la
+CC BY 4.0.
+
 ## Componenti di terzi
 
 | Cosa | Dove | Licenza |

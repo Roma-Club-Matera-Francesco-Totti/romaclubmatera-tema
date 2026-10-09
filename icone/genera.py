@@ -7,9 +7,10 @@ e values/iconpack.xml. I simboli sono Material Symbols Rounded (Apache 2.0),
 scaricati una volta in icone/simboli/ e poi riusati. Le app che non sono in
 app.py prendono la cornice (iconback + scala), cosi' tutto resta uniforme.
 """
-import base64, os, re, subprocess, sys, tempfile, urllib.request
+import base64, os, re, shutil, subprocess, sys, tempfile, urllib.request
 from collections import Counter
 from app import ICONE
+from loghi import LOGHI
 
 QUI = os.path.dirname(os.path.abspath(__file__))
 SIMBOLI = os.path.join(QUI, 'simboli')
@@ -72,18 +73,26 @@ def main():
             for c in comp:
                 if c.split('/')[0] in pacchetti:
                     filtro.append(f'  <item component="ComponentInfo{{{c}}}" drawable="{dn}"/>')
+    # app diffuse: la loro icona nella cornice del Club (loghi.py)
+    loghi = []
+    for chiave, componenti in LOGHI.items():
+        dn = 'rcm_l_' + chiave
+        shutil.copy(os.path.join(QUI, 'loghi', chiave + '.png'), os.path.join(res, 'drawable-nodpi', dn + '.png'))
+        loghi.append(dn)
+        filtro += [f'  <item component="ComponentInfo{{{c}}}" drawable="{dn}"/>' for c in componenti]
     with open(os.path.join(res, 'xml', 'appfilter.xml'), 'w') as f:
         f.write('<?xml version="1.0" encoding="utf-8"?>\n<resources>\n'
                 '  <iconback img1="rcm_cornice"/>\n  <scale factor="0.62"/>\n'
                 + '\n'.join(filtro) + '\n</resources>\n')
     with open(os.path.join(res, 'xml', 'drawable.xml'), 'w') as f:
         f.write('<?xml version="1.0" encoding="utf-8"?>\n<resources>\n  <version>1</version>\n  <category title="Roma Club Matera"/>\n'
-                + ''.join(f'  <item drawable="{d}"/>\n' for d in disegni) + '</resources>\n')
+                + ''.join(f'  <item drawable="{d}"/>\n' for d in disegni)
+                + '  <category title="App"/>\n' + ''.join(f'  <item drawable="{d}"/>\n' for d in loghi) + '</resources>\n')
     with open(os.path.join(res, 'values', 'iconpack.xml'), 'w') as f:
         f.write('<?xml version="1.0" encoding="utf-8"?>\n<resources>\n  <string-array name="icon_pack" translatable="false">\n'
                 + ''.join(f'    <item>{d}</item>\n' for d in disegni) + '  </string-array>\n</resources>\n')
     usati = Counter(r.split('drawable="')[1].rstrip('"/>') for r in filtro)
-    print(f'{len(disegni)} icone, {len(filtro)} componenti nel filtro')
+    print(f'{len(disegni)} icone, {len(loghi)} app nella cornice, {len(filtro)} componenti nel filtro')
     for d in disegni:
         if not usati[d]:
             print('  senza componenti:', d)

@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'stile.dart';
 import 'tema.dart';
 
+/// La Home RCM resta nascosta finche' non ha cartelle e widget (vedi il
+/// manifest, HomeActivity enabled=false).
+const homeRcmPronta = false;
+
 const _nomi = {
   'com.teslacoilsw.launcher': 'Nova Launcher',
   'app.lawnchair': 'Lawnchair',
@@ -132,7 +136,7 @@ class _PaginaApplicaState extends State<PaginaApplica> with WidgetsBindingObserv
                 'Su Android 12 e successivi anche menu e pulsanti prendono i colori giallorossi.',
                 style: Stile.testo(15)),
           ),
-          _homeRcm(s.data!.predefinito == 'it.romaclubmatera.tema'),
+          if (homeRcmPronta) _homeRcm(s.data!.predefinito == 'it.romaclubmatera.tema'),
           for (final p in launcher)
             _Scheda(
               titolo: _nomi[p]!,

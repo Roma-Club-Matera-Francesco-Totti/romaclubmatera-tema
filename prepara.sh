@@ -17,7 +17,7 @@ rm -f "$RES"/drawable-nodpi/rcm_*.png
 mkdir -p "$ASSETS/icone"
 rm -f "$ASSETS"/icone/*.png
 cp "$RES"/drawable-nodpi/rcm_*.png "$ASSETS/icone/"
-rm "$ASSETS/icone/rcm_cornice.png"
+rm "$ASSETS/icone/rcm_cornice.png" "$ASSETS"/icone/rcm_l_*.png  # nella scheda Icone solo le icone del Club
 
 # icona dell'app: stemma su rosso (adattiva) e versione tonda per i vecchi launcher
 rsvg-convert -w 230 "$QUI/sfondi/stemma.svg" -o "$TMP/s.png"
