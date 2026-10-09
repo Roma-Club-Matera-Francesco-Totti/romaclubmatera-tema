@@ -29,6 +29,8 @@ class MainActivity : FlutterActivity() {
         "ginlemon.flowerpro" to "Smart Launcher",
         "com.actionlauncher.playstore" to "Action Launcher",
         "com.samsung.android.themedesigner" to "Theme Park",
+        // non e' un launcher: serve a sapere a che punto e' un Samsung
+        "com.samsung.android.goodlock" to "Good Lock",
     )
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

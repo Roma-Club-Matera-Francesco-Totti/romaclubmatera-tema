@@ -57,6 +57,39 @@ class _PaginaApplicaState extends State<PaginaApplica> with WidgetsBindingObserv
     }
   }
 
+  /// Samsung: le icone passano da Theme Park (Good Lock). L'app guarda cosa
+  /// c'e' gia' e il pulsante porta al passo successivo; i passi sono quelli
+  /// provati su un Galaxy S25 con One UI 9 (09/10/2026), Theme Park e' in inglese.
+  Widget _samsung(List<String> installati) {
+    const goodLock = 'com.samsung.android.goodlock', themePark = 'com.samsung.android.themedesigner';
+    final haGoodLock = installati.contains(goodLock), haThemePark = installati.contains(themePark);
+    final (testo, icona, azione) = haThemePark
+        ? ('Apri Theme Park', Icons.open_in_new, () => Tema.applica(themePark))
+        : haGoodLock
+            ? ('Installa Theme Park', Icons.shop, () => Tema.apri('samsungapps://ProductDetail/$themePark'))
+            : ('Installa Good Lock', Icons.shop, () => Tema.apri('samsungapps://ProductDetail/$goodLock'));
+    return _Scheda(
+      titolo: 'Telefono Samsung',
+      icona: Icons.phone_android,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Il launcher Samsung accetta le icone tramite Theme Park, un\'app gratuita di Samsung. '
+            'Il pulsante qui sotto ti porta al passo che manca.', style: Stile.testo(15)),
+        const SizedBox(height: 10),
+        _Passo(1, 'Installa Good Lock dal Galaxy Store, aprilo e accetta i termini.', fatto: haGoodLock),
+        _Passo(2, 'Installa Theme Park (da Good Lock o dal Galaxy Store).', fatto: haThemePark),
+        const _Passo(3, 'In Theme Park tocca Icon in basso, poi Create new.'),
+        const _Passo(4, 'Nell\'editor tocca Icon in basso, poi Iconpack, e scegli Tema RCM.'),
+        const _Passo(5, 'Tocca il pulsante di salvataggio in alto a destra e dai un nome senza spazi, per esempio TemaRCM.'),
+        const _Passo(6, 'Tocca il tema salvato e poi Apply.'),
+        const SizedBox(height: 6),
+        Text('Con Theme Park le app senza un\'icona del Club restano come sono: la cornice giallorossa '
+            'la mettono solo i launcher come Nova.', style: Stile.sotto(13)),
+        const SizedBox(height: 12),
+        Pulsante(testo, icona: icona, onPressed: azione),
+      ]),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
@@ -85,26 +118,7 @@ class _PaginaApplicaState extends State<PaginaApplica> with WidgetsBindingObserv
                 Pulsante('Applica le icone', icona: Icons.check, onPressed: () => applica(p)),
               ]),
             ),
-          if (samsung)
-            _Scheda(
-              titolo: 'Telefono Samsung',
-              icona: Icons.phone_android,
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Il launcher Samsung accetta le icone tramite Theme Park, un\'app gratuita di Samsung:',
-                    style: Stile.testo(15)),
-                const SizedBox(height: 10),
-                for (final (n, t) in [
-                  (1, 'Installa Good Lock dal Galaxy Store e, da Good Lock, il modulo Theme Park.'),
-                  (2, 'In Theme Park apri la scheda Icone e tocca Crea nuovo.'),
-                  (3, 'Scegli Tema RCM tra i pacchetti di icone installati.'),
-                  (4, 'Salva e tocca Applica.'),
-                ])
-                  _Passo(n, t),
-                const SizedBox(height: 12),
-                Pulsante('Apri il Galaxy Store', pieno: false, icona: Icons.open_in_new,
-                    onPressed: () => Tema.apri('samsungapps://ProductDetail/com.samsung.android.goodlock')),
-              ]),
-            ),
+          if (samsung) _samsung(installati),
           if (launcher.isEmpty)
             _Scheda(
               titolo: 'Un launcher per le icone',
@@ -159,9 +173,10 @@ class _Scheda extends StatelessWidget {
 }
 
 class _Passo extends StatelessWidget {
-  const _Passo(this.n, this.testo);
+  const _Passo(this.n, this.testo, {this.fatto = false});
   final int n;
   final String testo;
+  final bool fatto;
 
   @override
   Widget build(BuildContext context) {
@@ -170,11 +185,13 @@ class _Passo extends StatelessWidget {
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
           width: 24, height: 24, alignment: Alignment.center,
-          decoration: const BoxDecoration(color: Stile.rosso, shape: BoxShape.circle),
-          child: Text('$n', style: Stile.testo(13, colore: Stile.oro, peso: 600)),
+          decoration: BoxDecoration(color: fatto ? Stile.oro : Stile.rosso, shape: BoxShape.circle),
+          child: fatto
+              ? const Icon(Icons.check, size: 16, color: Stile.fondo)
+              : Text('$n', style: Stile.testo(13, colore: Stile.oro, peso: 600)),
         ),
         const SizedBox(width: 10),
-        Expanded(child: Text(testo, style: Stile.testo(15))),
+        Expanded(child: Text(testo, style: Stile.testo(15, colore: fatto ? Stile.panna.withValues(alpha: .55) : Stile.panna))),
       ]),
     );
   }

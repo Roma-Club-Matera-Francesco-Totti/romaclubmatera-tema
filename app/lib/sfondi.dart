@@ -88,7 +88,7 @@ class _Miniatura extends StatelessWidget {
   }
 }
 
-/// Lo sfondo a tutto schermo, si scorre di lato; sotto i tre pulsanti.
+/// Lo sfondo a tutto schermo, si scorre di lato; in alto nome e numero, sotto i tre pulsanti.
 class Anteprima extends StatefulWidget {
   const Anteprima({super.key, required this.sfondi, required this.iniziale});
   final List<String> sfondi;
@@ -128,36 +128,53 @@ class _AnteprimaState extends State<Anteprima> {
           onPageChanged: (n) => setState(() => i = n),
           itemBuilder: (_, n) => Hero(tag: widget.sfondi[n], child: Image.asset(widget.sfondi[n], fit: BoxFit.cover)),
         ),
+        // in basso solo i pulsanti, su una riga: stemma e scritte dello sfondo
+        // stanno sopra (zone libere di genera.py) e restano scoperti
         Positioned(
           left: 0, right: 0, bottom: 0,
           child: Container(
-            padding: EdgeInsets.fromLTRB(18, 60, 18, 18 + MediaQuery.paddingOf(context).bottom),
+            padding: EdgeInsets.fromLTRB(14, 36, 14, 16 + MediaQuery.paddingOf(context).bottom),
             decoration: const BoxDecoration(
               gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Color(0xEE000000)]),
+                  colors: [Colors.transparent, Color(0xCC000000)]),
             ),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Text(nomeSfondo(widget.sfondi[i]).toUpperCase(), style: Stile.titolo(20)),
-              const SizedBox(height: 4),
-              Text('${i + 1} di ${widget.sfondi.length}', style: Stile.sotto(12.5)),
-              const SizedBox(height: 16),
-              if (lavoro)
-                const Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(color: Stile.oro))
-              else
-                Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 10, children: [
-                  Pulsante('Home', pieno: false, icona: Icons.home_outlined, onPressed: () => imposta('home')),
-                  Pulsante('Blocco', pieno: false, icona: Icons.lock_outline, onPressed: () => imposta('blocco')),
-                  Pulsante('Entrambe', icona: Icons.check, onPressed: () => imposta('entrambe')),
-                ]),
-            ]),
+            child: lavoro
+                ? const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(color: Stile.oro)))
+                : Row(children: [
+                    for (final (k, b) in [
+                      Pulsante('Home', pieno: false, icona: Icons.home_outlined, onPressed: () => imposta('home')),
+                      Pulsante('Blocco', pieno: false, icona: Icons.lock_outline, onPressed: () => imposta('blocco')),
+                      Pulsante('Entrambe', icona: Icons.check, onPressed: () => imposta('entrambe')),
+                    ].indexed) ...[
+                      if (k > 0) const SizedBox(width: 8),
+                      Expanded(child: FittedBox(fit: BoxFit.scaleDown, child: b)),
+                    ],
+                  ]),
           ),
         ),
+        // in alto, dove sul telefono c'e' l'orologio: indietro, nome e numero
         Positioned(
-          top: MediaQuery.paddingOf(context).top + 8, left: 8,
-          child: IconButton.filled(
-            style: IconButton.styleFrom(backgroundColor: Colors.black45, foregroundColor: Stile.panna),
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.pop(context),
+          left: 0, right: 0, top: 0,
+          child: Container(
+            padding: EdgeInsets.fromLTRB(8, MediaQuery.paddingOf(context).top + 8, 18, 28),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                  colors: [Color(0xB3000000), Colors.transparent]),
+            ),
+            child: Row(children: [
+              IconButton.filled(
+                style: IconButton.styleFrom(backgroundColor: Colors.black45, foregroundColor: Stile.panna),
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.pop(context),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(nomeSfondo(widget.sfondi[i]).toUpperCase(), style: Stile.titolo(18), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text('${i + 1} di ${widget.sfondi.length}', style: Stile.sotto(12.5)),
+                ]),
+              ),
+            ]),
           ),
         ),
       ]),
