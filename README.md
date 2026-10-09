@@ -25,9 +25,8 @@ del Club, e i generatori da cui escono.
   un'app compaiono le sue scorciatoie; i pallini delle notifiche arrivano
   da `Notifiche.kt` se l'utente concede l'accesso alle notifiche (solo quali
   app, mai il contenuto). Le app senza icona del Club hanno la loro icona
-  ritagliata nella cornice, come `personale/cornice.py`. Nella versione pubblica e' spenta:
-  si accende costruendo con
-  `--dart-define=HOME_RCM=true -PhomeRcm=true`.
+  ritagliata nella cornice, come `personale/cornice.py`. Pubblica dalla 1.5.0; si spegne
+  costruendo con `--dart-define=HOME_RCM=false -PhomeRcm=false`.
 
 - `portfolio/genera.py` — il portfolio per la candidatura a designer di
   Galaxy Themes (Samsung): 3 temi (Giallorosso, Notte, Matera) × 6 schermate

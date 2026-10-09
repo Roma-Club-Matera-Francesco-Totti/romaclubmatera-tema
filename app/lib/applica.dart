@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'stile.dart';
 import 'tema.dart';
 
-/// La Home RCM resta nascosta finche' non ha cartelle e widget (vedi il
-/// manifest, HomeActivity enabled=false).
-const homeRcmPronta = bool.fromEnvironment('HOME_RCM');
+/// La Home RCM (pubblica dalla 1.5.0); si spegne costruendo con
+/// --dart-define=HOME_RCM=false -PhomeRcm=false.
+const homeRcmPronta = bool.fromEnvironment('HOME_RCM', defaultValue: true);
 
 const _nomi = {
   'com.teslacoilsw.launcher': 'Nova Launcher',
@@ -75,9 +75,9 @@ class _PaginaApplicaState extends State<PaginaApplica> with WidgetsBindingObserv
                       'prendono le icone del Club, su qualunque telefono, senza installare altro.',
               style: Stile.testo(15)),
           const SizedBox(height: 8),
-          Text('Ci sono orologio, app preferite, dock e cassetto con la ricerca; tieni premuta un\'app per '
-              'aggiungerla alla Home o al dock. Non ci sono i widget né i pallini delle notifiche. '
-              'Si torna indietro quando vuoi da Impostazioni › App › App predefinite › App Home.',
+          Text('Ci sono pagine, cartelle, widget (anche il meteo), dock e cassetto con la ricerca. Tieni premuto '
+              'per spostare, trascina un\'app sopra un\'altra per fare una cartella, tieni premuto su uno spazio '
+              'vuoto per i widget. Si torna indietro quando vuoi da Impostazioni › App › App predefinite › App Home.',
               style: Stile.sotto(13)),
           const SizedBox(height: 12),
           Pulsante(attiva ? 'Cambia app Home' : 'Usa la Home RCM',
@@ -110,8 +110,8 @@ class _PaginaApplicaState extends State<PaginaApplica> with WidgetsBindingObserv
         const _Passo(5, 'Tocca il pulsante di salvataggio in alto a destra e dai un nome senza spazi, per esempio TemaRCM.'),
         const _Passo(6, 'Tocca il tema salvato e poi Apply.'),
         const SizedBox(height: 6),
-        Text('Con Theme Park le app senza un\'icona del Club restano come sono: la cornice giallorossa '
-            'la mettono solo i launcher come Nova.', style: Stile.sotto(13)),
+        Text('Con Theme Park le app senza un\'icona del Club restano come sono: per avere la cornice '
+            'su tutte usa la Home del Club, qui sopra.', style: Stile.sotto(13)),
         const SizedBox(height: 12),
         Pulsante(testo, icona: icona, onPressed: azione),
       ]),

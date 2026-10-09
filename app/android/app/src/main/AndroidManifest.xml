@@ -70,7 +70,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
-        <!-- Spenta finche' non e' pronta: si accende costruendo con -PhomeRcm=true.
+        <!-- Pubblica dalla 1.5.0; costruendo con -PhomeRcm=false si spegne.
              La Home del Club: launcher vero, si sceglie in Impostazioni ›
              App predefinite › App Home. Disegnata sopra lo sfondo del telefono. -->
         <activity
