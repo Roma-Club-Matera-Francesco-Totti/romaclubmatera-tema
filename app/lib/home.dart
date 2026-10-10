@@ -1929,10 +1929,13 @@ class _Cassetto extends StatefulWidget {
 
 class _CassettoState extends State<_Cassetto> {
   final cerca = TextEditingController();
+  final pc = PageController();
+  var pagina = 0;
 
   @override
   void dispose() {
     cerca.dispose();
+    pc.dispose();
     super.dispose();
   }
 
@@ -1966,7 +1969,10 @@ class _CassettoState extends State<_Cassetto> {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
               child: TextField(
                 controller: cerca,
-                onChanged: (_) => setState(() {}),
+                onChanged: (_) {
+                  if (pc.hasClients) pc.jumpToPage(0);
+                  setState(() => pagina = 0);
+                },
                 style: Stile.testo(16),
                 cursorColor: Stile.oro,
                 decoration: InputDecoration(
@@ -1982,21 +1988,76 @@ class _CassettoState extends State<_Cassetto> {
                 },
               ),
             ),
+            // a pagine come la Home di Samsung: 4 colonne, tante righe quante
+            // ne stanno, si scorre di lato; tirando giu' si chiude
             Expanded(
-              // tirando giu' quando sei gia' in cima si chiude
-              child: NotificationListener<OverscrollNotification>(
-                onNotification: (n) {
-                  if (n.overscroll < -8 && n.dragDetails != null) chiudi();
-                  return false;
+              child: LayoutBuilder(
+                builder: (_, c) {
+                  const alta = 104.0;
+                  final righe = ((c.maxHeight - 30) / alta).floor().clamp(1, 8);
+                  final perPagina = _colonne * righe;
+                  final n = app.isEmpty ? 1 : (app.length + perPagina - 1) ~/ perPagina;
+                  if (pagina >= n) pagina = n - 1;
+                  return GestureDetector(
+                    onVerticalDragEnd: (d) {
+                      if ((d.primaryVelocity ?? 0) > 200) chiudi();
+                    },
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: PageView.builder(
+                            controller: pc,
+                            itemCount: n,
+                            onPageChanged: (i) => setState(() => pagina = i),
+                            itemBuilder: (_, p) => Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              child: Column(
+                                children: [
+                                  for (var r = 0; r < righe; r++)
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          for (var k = 0; k < _colonne; k++)
+                                            Expanded(
+                                              child: Center(
+                                                child: p * perPagina + r * _colonne + k < app.length
+                                                    ? widget.presa(app[p * perPagina + r * _colonne + k])
+                                                    : null,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          height: 30,
+                          child: n < 2
+                              ? null
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    for (var i = 0; i < n; i++)
+                                      AnimatedContainer(
+                                        duration: const Duration(milliseconds: 200),
+                                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                                        width: i == pagina ? 18 : 7,
+                                        height: 7,
+                                        decoration: BoxDecoration(
+                                          color: i == pagina ? Stile.oro : Stile.panna.withValues(alpha: .5),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                        ),
+                      ],
+                    ),
+                  );
                 },
-                child: GridView.count(
-                  crossAxisCount: 4,
-                  physics: const ClampingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
-                  mainAxisSpacing: 12,
-                  childAspectRatio: .82,
-                  children: [for (final a in app) Center(child: widget.presa(a))],
-                ),
               ),
             ),
           ],
