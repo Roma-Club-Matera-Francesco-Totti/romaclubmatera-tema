@@ -1,3 +1,7 @@
 sfondi-png/
 __pycache__/
 personale/locale/
+
+# chiave API della Play Console (fastlane supply)
+*service-account*.json
+play-*.json
