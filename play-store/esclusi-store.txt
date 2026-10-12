@@ -1,0 +1,10 @@
+# Sfondi esclusi dall'AAB del Play Store (giocatori veri col nome sulla
+# maglia), uno per riga, nomi in app/assets/sfondi/.
+08-totti-10.webp
+09-de-rossi-16.webp
+09-totti-e-de-rossi.webp
+21-dybala-21.webp
+22-malen-14-curva.webp
+23-svilar-99.webp
+24-mancini-23-derby.webp
+24-mancini-23.webp

@@ -47,8 +47,10 @@ Testi e immagini della scheda stanno in `fastlane/metadata/android/it-IT/`
    intellettuale e sull'impersonificazione). Da decidere: build per lo
    Store senza quegli sfondi, oppure attendere l'autorizzazione di AS Roma.
    Le immagini della scheda non ne usano nessuno.
-2. **Formato**: lo Store vuole l'**AAB**, non l'APK:
-   `flutter build appbundle --release`.
+2. **Formato**: lo Store vuole l'**AAB**, non l'APK. Si fa con
+   `play-store/aab-store.sh`, che lascia fuori gli sfondi elencati in
+   `play-store/esclusi-store.txt` (deciso il 12/10/2026: sullo Store la
+   versione senza i giocatori, l'APK del sito resta completo).
 3. **Firma**: con la firma delle app di Google Play, la chiave di
    `key.properties` diventa la chiave di caricamento. Chi ha già
    l'APK dal sito può aggiornare dallo Store solo se Google firma con la
