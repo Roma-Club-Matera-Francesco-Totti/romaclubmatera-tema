@@ -51,6 +51,9 @@ Testi e immagini della scheda stanno in `fastlane/metadata/android/it-IT/`
    `play-store/aab-store.sh`, che lascia fuori gli sfondi elencati in
    `play-store/esclusi-store.txt` (deciso il 12/10/2026: sullo Store la
    versione senza i giocatori, l'APK del sito resta completo).
+   L'AAB e' firmato con la **chiave di caricamento** del Play Store
+   (`-Pfirma=key-play.properties`, file fuori da git): la chiave di firma
+   dell'app la gestisce Google, quindi quella del Club non si puo' usare.
 3. **Firma**: con la firma delle app di Google Play, la chiave di
    `key.properties` diventa la chiave di caricamento. Chi ha già
    l'APK dal sito può aggiornare dallo Store solo se Google firma con la

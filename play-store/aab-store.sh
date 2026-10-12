@@ -28,4 +28,4 @@ done
 echo "sfondi nello Store: $(ls "$SFONDI" | wc -l)"
 
 cd "$QUI/app"
-flutter build appbundle --release
+flutter build appbundle --release -P firma=key-play.properties

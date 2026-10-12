@@ -31,7 +31,8 @@ android {
     // dice dove si trova e con quali password; senza, la release si firma con
     // la chiave di debug e va bene solo per provare.
     val firma = Properties().apply {
-        val f = rootProject.file("key.properties")
+        // -Pfirma=key-play.properties: chiave di caricamento del Play Store
+        val f = rootProject.file((project.findProperty("firma") ?: "key.properties").toString())
         if (f.exists()) f.inputStream().use { load(it) }
     }
     signingConfigs {
