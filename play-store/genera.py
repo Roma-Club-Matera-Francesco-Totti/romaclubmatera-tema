@@ -80,7 +80,7 @@ def grafica():
     d.text((x, 140), 'TEMA RCM', font=carattere('Cinzel.ttf', 800, 74), fill=ORO)
     d.line((x, 240, x + 330, 240), fill=ORO, width=3)
     corpo = carattere('Oswald.ttf', 400, 34)
-    d.text((x, 262), 'Sfondi, icone e Home', font=corpo, fill=PANNA)
+    d.text((x, 262), 'Sfondi e widget', font=corpo, fill=PANNA)
     d.text((x, 306), 'del Roma Club Matera', font=corpo, fill=PANNA)
     img.convert('RGB').save(OUT / 'featureGraphic.png')
 
