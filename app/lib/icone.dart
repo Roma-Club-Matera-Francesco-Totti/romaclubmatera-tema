@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'applica.dart';
 import 'stile.dart';
 import 'tema.dart';
 
@@ -18,8 +19,8 @@ class PaginaIcone extends StatelessWidget {
             sliver: SliverToBoxAdapter(
               child: Text(
                   '${icone.length} icone oro su rosso per le app più usate: telefono, messaggi, fotocamera, '
-                  'WhatsApp, banca e tante altre. Tutte le altre app prendono la cornice giallorossa, '
-                  'così la schermata resta uniforme.',
+                  'WhatsApp e tante altre.'
+                  '${homeRcmPronta ? ' Con la Home del Club anche tutte le altre app prendono la cornice giallorossa.' : ''}',
                   style: Stile.testo(15, colore: Stile.panna.withValues(alpha: .8))),
             ),
           ),

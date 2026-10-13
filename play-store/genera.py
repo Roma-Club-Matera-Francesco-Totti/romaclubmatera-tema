@@ -8,8 +8,8 @@
   dell'altro, e i 1080x2340 del telefono lo superano), con una riga di
   didascalia sopra la schermata.
 
-Le schermate grezze stanno in play-store/schermate/ (prese col telefono,
-senza dati personali). Sfondi solo di luoghi e colori: niente volti di
+Le schermate grezze stanno in play-store/schermate/ (telefono ed emulatore
+come un S25, 1080x2340, senza dati personali). Sfondi solo di luoghi e colori: niente volti di
 giocatori, che nello Store sono il primo motivo di rifiuto.
 
 Uso: python3 play-store/genera.py
@@ -173,11 +173,12 @@ def main():
     icona()
     grafica()
     sc = QUI / 'schermate'
-    schermata(1, 'Gli sfondi del Club in alta risoluzione', Image.open(sc / 'sfondi.png'))
-    sfondo_intero(2, 'Matera e Roma, di giorno e di notte', ['06-colosseo.webp', '11-sassi-di-notte.webp', '07-olimpico-notte.webp'])
-    schermata(3, '43 icone oro su rosso', Image.open(sc / 'icone.png'))
-    schermata(4, 'Ti guida passo passo, su ogni telefono', Image.open(sc / 'applica.png'))
-    sfondo_intero(5, 'Da Matera all\'Olimpico', ['12-da-matera-a-roma.webp', '14-la-curva-fumogeni.webp', '03-sciarpa.webp'])
+    schermata(1, 'I widget del Club sulla tua Home', Image.open(sc / 'home-widget.png'))
+    schermata(2, 'Gli sfondi del Club in alta risoluzione', Image.open(sc / 'sfondi.png'))
+    sfondo_intero(3, 'Matera e Roma, di giorno e di notte', ['06-colosseo.webp', '11-sassi-di-notte.webp', '07-olimpico-notte.webp'])
+    schermata(4, 'Prossima partita e orologio, con un tocco', Image.open(sc / 'widget.png'))
+    sfondo_intero(5, 'Roma e Matera in giallorosso', ['26-castel-santangelo.webp', '30-fontana-di-trevi.webp', '27-duomo-di-matera.webp'])
+    schermata(6, 'E per chi vuole, le icone oro su rosso', Image.open(sc / 'icone.png'))
     print('fatto:', ', '.join(sorted(str(p.relative_to(OUT)) for p in OUT.rglob('*.png'))))
 
 

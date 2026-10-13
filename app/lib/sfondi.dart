@@ -16,7 +16,8 @@ String nomeSfondo(String asset) {
     'olimpico-notte': "L'Olimpico", 'la-curva-fumogeni': 'La Curva',
     'dybala-21': 'Dybala 21', 'malen-14-curva': 'Malen 14', 'svilar-99': 'Svilar 99',
     'mancini-23': 'Mancini 23', 'mancini-23-derby': 'Mancini 23 derby', 'portiere-tuffo': 'Il tuffo',
-    'sassi-di-notte': 'Sassi di notte',
+    'sassi-di-notte': 'Sassi di notte', 'castel-santangelo': "Castel Sant'Angelo", 'duomo-di-matera': 'Duomo di Matera',
+    'sassi-all-alba': "Sassi all'alba", 'fontana-di-trevi': 'Fontana di Trevi',
   };
   final base = asset.split('/').last.split('.').first.replaceFirst(RegExp(r'^\d+-'), '');
   if (speciali.containsKey(base)) return speciali[base]!;

@@ -233,6 +233,12 @@ FOTO = {
     # la bandiera col topo sfotte la Lazio: voluta da Michele (10/10/2026)
     'fatte/sfondo-roma-mancini-23-bandiera-derby.png': [('24-mancini-23-derby', 'GIANLUCA MANCINI', {})],
     'fatte/sfondo-roma-portiere-tuffo-riflettori.png': [('25-portiere-tuffo', 'ROMA CLUB MATERA', {'centro': .55})],
+    # illustrazioni del 12/10/2026 (853x1844): solo luoghi e colori, vanno anche nello Store
+    'fatte/sfondo-roma-castel-santangelo-tramonto.png': [('26-castel-santangelo', 'ROMA CLUB MATERA', {'centro': .45})],
+    'fatte/sfondo-matera-duomo-notte.png': [('27-duomo-di-matera', 'MATERA', {})],
+    'fatte/sfondo-giallorosso-onde-di-raso.png': [('28-onde-di-raso', 'ROMA CLUB MATERA', {})],
+    'fatte/sfondo-matera-sassi-alba.png': [('29-sassi-all-alba', 'MATERA', {})],
+    'fatte/sfondo-roma-fontana-di-trevi-notte.png': [('30-fontana-di-trevi', 'ROMA CLUB MATERA', {})],
 }
 
 
