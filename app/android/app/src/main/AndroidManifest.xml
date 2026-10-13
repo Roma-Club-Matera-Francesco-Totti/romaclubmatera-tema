@@ -1,9 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
+    <!-- solo il widget della prossima partita: legge il calendario dal sito -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- Android 11+: per sapere quali launcher sono installati -->
     <queries>
+        <!-- il tocco sul widget dell'orologio apre la sveglia -->
+        <intent>
+            <action android:name="android.intent.action.SHOW_ALARMS" />
+        </intent>
         <!-- i widget che la Home RCM puo' mettere -->
         <intent>
             <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -122,6 +128,29 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+        <!-- I widget del Club, da mettere sulla Home che si usa gia' -->
+        <receiver
+            android:name=".WidgetPartita"
+            android:exported="true"
+            android:label="@string/widget_partita_nome">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_partita_info" />
+        </receiver>
+        <receiver
+            android:name=".WidgetOrologio"
+            android:exported="true"
+            android:label="@string/widget_orologio_nome">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_orologio_info" />
+        </receiver>
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

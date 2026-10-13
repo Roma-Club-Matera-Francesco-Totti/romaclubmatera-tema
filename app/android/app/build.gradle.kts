@@ -6,6 +6,8 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val homeRcm = (project.findProperty("homeRcm") ?: "true").toString()
+
 android {
     namespace = "it.romaclubmatera.tema"
     compileSdk = flutter.compileSdkVersion
@@ -23,8 +25,13 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        // Home RCM: accesa (pubblica dalla 1.5.0); -PhomeRcm=false la spegne
-        manifestPlaceholders["homeRcm"] = (project.findProperty("homeRcm") ?: "true").toString()
+        // Home RCM: accesa nell'APK del sito; -PhomeRcm=false la spegne (Play Store)
+        manifestPlaceholders["homeRcm"] = homeRcm
+    }
+
+    // senza la Home RCM spariscono anche i permessi che servivano solo a lei
+    if (homeRcm == "false") {
+        sourceSets.getByName("release").manifest.srcFile("src/senzaHome/AndroidManifest.xml")
     }
 
     // Stessa chiave delle altre app del Club. key.properties (ignorato da git)

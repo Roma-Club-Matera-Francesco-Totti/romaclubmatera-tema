@@ -13,7 +13,7 @@ Testi e immagini della scheda stanno in `fastlane/metadata/android/it-IT/`
 | App o gioco | App |
 | Gratuita o a pagamento | Gratuita |
 | Categoria | Personalizzazione |
-| Tag | Sfondi, Temi, Launcher |
+| Tag | Sfondi, Temi, Widget |
 | Email | app@romaclubmatera.it |
 | Sito web | https://romaclubmatera.it/download/ |
 | Informativa sulla privacy | https://romaclubmatera.it/privacy-policy/ |
@@ -30,13 +30,23 @@ Testi e immagini della scheda stanno in `fastlane/metadata/android/it-IT/`
   13: con quelli scattano le norme Famiglie).
 - **App di notizie**: no. **App governative**: no. **Finanziarie, salute**: no.
 - **Sicurezza dei dati**:
-  - raccoglie dati? **No** (l'app non ha il permesso INTERNET: niente esce
-    dal telefono);
+  - raccoglie dati? **No**. Dalla 1.7.0 l'app ha il permesso INTERNET, ma
+    solo il widget della prossima partita lo usa, per leggere il calendario
+    pubblico da `romaclubmatera.it/wp-json/rcm/v1/prossime`: non manda
+    niente dell'utente (nessun identificativo, nessun dato del telefono);
   - condivide dati? **No**;
-  - i contatti (pagina dei Preferiti) si leggono e restano sul telefono:
-    per le regole di Google non sono "raccolti".
-- **Permessi**: READ_CONTACTS, SET_WALLPAPER, EXPAND_STATUS_BAR. Nessuno
-  è fra quelli che chiedono il modulo di dichiarazione.
+  - crittografia in transito: **sì** (HTTPS).
+- **Permessi** (versione dello Store, senza Home RCM): SET_WALLPAPER e
+  INTERNET. READ_CONTACTS ed EXPAND_STATUS_BAR servono solo alla Home RCM e
+  nell'AAB dello Store vengono tolti (`app/android/app/src/senzaHome/`).
+
+## La versione dello Store è quella «leggera» (13/10/2026)
+
+Michele: il launcher «stravolge l'uso del telefono», chi è abituato in un
+modo non vuole cambiare. Sullo Store quindi: **sfondi, widget (prossima
+partita, orologio) e icone come extra per chi ha un launcher che le
+supporta**. La Home RCM resta solo nell'APK del sito.
+`aab-store.sh` costruisce con `-P homeRcm=false --dart-define=HOME_RCM=false`.
 
 ## Prima di caricarla
 

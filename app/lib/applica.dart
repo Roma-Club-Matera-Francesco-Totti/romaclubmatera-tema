@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'icone.dart';
 import 'stile.dart';
 import 'tema.dart';
 
@@ -110,8 +111,8 @@ class _PaginaApplicaState extends State<PaginaApplica> with WidgetsBindingObserv
         const _Passo(5, 'Tocca il pulsante di salvataggio in alto a destra e dai un nome senza spazi, per esempio TemaRCM.'),
         const _Passo(6, 'Tocca il tema salvato e poi Apply.'),
         const SizedBox(height: 6),
-        Text('Con Theme Park le app senza un\'icona del Club restano come sono: per avere la cornice '
-            'su tutte usa la Home del Club, qui sopra.', style: Stile.sotto(13)),
+        Text('Con Theme Park le app senza un\'icona del Club restano come sono'
+            '${homeRcmPronta ? ': per avere la cornice su tutte c\'è la Home del Club, più sotto.' : '.'}', style: Stile.sotto(13)),
         const SizedBox(height: 12),
         Pulsante(testo, icona: icona, onPressed: azione),
       ]),
@@ -129,15 +130,20 @@ class _PaginaApplicaState extends State<PaginaApplica> with WidgetsBindingObserv
         final samsung = (s.data!.predefinito ?? '').startsWith('com.sec.android') ||
             installati.contains('com.samsung.android.themedesigner');
         return ListView(padding: const EdgeInsets.fromLTRB(16, 6, 16, 28), children: [
+          // le icone sono un extra per chi vuole: sfondi e widget bastano e
+          // non cambiano il modo di usare il telefono
           _Scheda(
-            titolo: 'Lo sfondo',
-            icona: Icons.wallpaper,
-            child: Text('Dalla scheda Sfondi: tocca quello che ti piace e scegli Home, Blocco o Entrambe. '
-                'Su Android 12 e successivi anche menu e pulsanti prendono i colori giallorossi.',
-                style: Stile.testo(15)),
+            titolo: 'Per chi vuole di più',
+            icona: Icons.apps,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Icone oro su rosso per le app più usate. Non tutti i telefoni le accettano: '
+                  'serve un launcher che le supporti oppure, sui Samsung, Theme Park.', style: Stile.testo(15)),
+              const SizedBox(height: 12),
+              Pulsante('Guarda le icone', pieno: false, icona: Icons.grid_view, onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => Scaffold(appBar: AppBar(title: Text('LE ICONE', style: Stile.titolo(17))),
+                      body: const PaginaIcone())))),
+            ]),
           ),
-          if (homeRcmPronta) _TuoTelefono(attiva: s.data!.predefinito == 'it.romaclubmatera.tema'),
-          if (homeRcmPronta) _homeRcm(s.data!.predefinito == 'it.romaclubmatera.tema'),
           for (final p in launcher)
             _Scheda(
               titolo: _nomi[p]!,
@@ -156,9 +162,9 @@ class _PaginaApplicaState extends State<PaginaApplica> with WidgetsBindingObserv
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(
                     samsung
-                        ? 'In alternativa a Theme Park puoi usare un launcher gratuito che accetta le icone in un tocco:'
+                        ? 'In alternativa a Theme Park puoi usare un launcher gratuito che applica le icone con un tocco:'
                         : 'Il launcher del tuo telefono non cambia le icone da solo. Installa un launcher gratuito '
-                            'che le accetta, poi torna qui e tocca Applica:',
+                            'che le accetti, poi torna qui e tocca Applica:',
                     style: Stile.testo(15)),
                 const SizedBox(height: 14),
                 Wrap(spacing: 10, runSpacing: 10, children: [
@@ -169,6 +175,8 @@ class _PaginaApplicaState extends State<PaginaApplica> with WidgetsBindingObserv
                 ]),
               ]),
             ),
+          if (homeRcmPronta) _TuoTelefono(attiva: s.data!.predefinito == 'it.romaclubmatera.tema'),
+          if (homeRcmPronta) _homeRcm(s.data!.predefinito == 'it.romaclubmatera.tema'),
           const SizedBox(height: 10),
           Center(child: Text('Roma Club Matera «Francesco Totti» · dal 2012', style: Stile.sotto(12))),
         ]);
@@ -193,7 +201,7 @@ class _Scheda extends StatelessWidget {
         Row(children: [
           Icon(icona, color: Stile.oro, size: 22),
           const SizedBox(width: 10),
-          Text(titolo.toUpperCase(), style: Stile.titolo(15.5)),
+          Expanded(child: Text(titolo.toUpperCase(), style: Stile.titolo(15.5))),
         ]),
         const SizedBox(height: 12),
         child,

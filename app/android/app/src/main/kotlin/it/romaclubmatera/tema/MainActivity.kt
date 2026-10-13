@@ -1,6 +1,8 @@
 package it.romaclubmatera.tema
 
 import android.app.WallpaperManager
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.pm.LauncherApps
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -123,6 +125,14 @@ class MainActivity : FlutterActivity() {
                         catch (e: Exception) { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)) }
                     } else startActivity(Intent(Settings.ACTION_HOME_SETTINGS))
                     result.success(true)
+                }
+                // la finestra di Android "aggiungere il widget alla Home?"; false se il
+                // launcher non la offre (l'app spiega come farlo a mano)
+                "aggiungiWidget" -> {
+                    val am = AppWidgetManager.getInstance(this)
+                    val classe = if (call.argument<String>("quale") == "orologio") WidgetOrologio::class.java else WidgetPartita::class.java
+                    result.success(am.isRequestPinAppWidgetSupported &&
+                        am.requestPinAppWidget(ComponentName(this, classe), null, null))
                 }
                 "sceltaHome" -> { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)); result.success(true) }
                 "apri" -> {

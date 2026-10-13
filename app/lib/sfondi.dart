@@ -37,7 +37,8 @@ class PaginaSfondi extends StatelessWidget {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
             sliver: SliverToBoxAdapter(
-              child: Text('${sfondi.length} sfondi in alta risoluzione. Toccane uno per vederlo e impostarlo.',
+              child: Text('${sfondi.length} sfondi in alta risoluzione. Toccane uno per vederlo e impostarlo: '
+                  'su Android 12 e successivi anche menu e pulsanti del telefono prendono i colori giallorossi.',
                   style: Stile.testo(15, colore: Stile.panna.withValues(alpha: .8))),
             ),
           ),

@@ -3,10 +3,10 @@ import 'package:flutter/services.dart';
 
 import 'applica.dart';
 import 'home.dart';
-import 'icone.dart';
 import 'sfondi.dart';
 import 'stile.dart';
 import 'tema.dart';
+import 'widget_club.dart';
 
 /// La Home RCM (HomeActivity.kt la avvia per nome, da questa libreria).
 @pragma('vm:entry-point')
@@ -58,7 +58,7 @@ class _CasaState extends State<Casa> {
 
   @override
   Widget build(BuildContext context) {
-    final pagine = [const PaginaSfondi(), const PaginaIcone(), const PaginaApplica()];
+    final pagine = [const PaginaSfondi(), const PaginaWidget(), const PaginaApplica()];
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -69,8 +69,8 @@ class _CasaState extends State<Casa> {
         onDestinationSelected: (i) => setState(() => scheda = i),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.wallpaper_outlined), selectedIcon: Icon(Icons.wallpaper), label: 'Sfondi'),
+          NavigationDestination(icon: Icon(Icons.widgets_outlined), selectedIcon: Icon(Icons.widgets), label: 'Widget'),
           NavigationDestination(icon: Icon(Icons.apps_outlined), selectedIcon: Icon(Icons.apps), label: 'Icone'),
-          NavigationDestination(icon: Icon(Icons.check_circle_outline), selectedIcon: Icon(Icons.check_circle), label: 'Applica'),
         ],
       ),
     );

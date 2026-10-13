@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_partita_nome">Prossima partita</string>
+    <string name="widget_partita_descrizione">La prossima partita della Roma, con il conto alla rovescia</string>
+    <string name="widget_orologio_nome">Orologio giallorosso</string>
+    <string name="widget_orologio_descrizione">Ora e data con lo stemma del Club</string>
+    <string name="widget_prossima">Prossima partita</string>
+    <string name="widget_attesa">Roma Club Matera</string>
+</resources>

@@ -1,25 +1,19 @@
-Il tema del Roma Club Matera «Francesco Totti»: il telefono si veste di giallorosso in un minuto.
+Il tema del Roma Club Matera «Francesco Totti»: il telefono si veste di giallorosso in un minuto, senza cambiare il modo in cui lo usi.
 
 <b>SFONDI</b>
-Sfondi in alta risoluzione pensati per lo schermo del telefono: lo stemma del Club, la sciarpa, Matera di notte, il Colosseo, l'Olimpico e la curva. Toccane uno, guardalo a tutto schermo e scegli se metterlo nella Home, nella schermata di blocco o in entrambe. Su Android 12 e successivi anche menu e pulsanti prendono i colori giallorossi.
+Sfondi in alta risoluzione pensati per lo schermo del telefono: lo stemma del Club, la sciarpa, Matera di notte, il Colosseo, l'Olimpico e la curva. Toccane uno, guardalo a tutto schermo e scegli se metterlo nella Home, nella schermata di blocco o in entrambe. Su Android 12 e successivi anche menu e pulsanti del telefono prendono i colori giallorossi.
 
-<b>ICONE</b>
-43 icone oro su rosso per le app di tutti i giorni: telefono, messaggi, fotocamera, impostazioni e tante altre. Funzionano con Nova, Smart Launcher, Action Launcher, Lawnchair e, su Samsung, con Theme Park.
+<b>WIDGET</b>
+Due widget da mettere sulla tua Home, come quello del meteo:
+• Prossima partita: avversario, competizione, giorno, ora, canale TV e quanto manca. Si aggiorna da solo dal calendario del Club; toccalo per aprire la pagina della partita.
+• Orologio giallorosso: ora e data accanto allo stemma del Club.
+Si aggiungono con un tocco dall'app e si tolgono quando vuoi.
 
-<b>LA HOME DEL CLUB</b>
-Tema RCM è anche una Home completa. Sceglila come app Home e tutte le app prendono la cornice giallorossa del Club, con la loro icona di sempre dentro. Hai tutto quello che ti aspetti:
-• pagine a griglia, dock e cassetto delle app a pagine con la ricerca;
-• cartelle e widget delle altre app, meteo compreso;
-• tieni premuto per spostare, togliere o vedere le scorciatoie di un'app;
-• pizzica con due dita per aggiungere o togliere pagine;
-• i contatti preferiti con la loro foto nella cornice: un tocco apre il numero già scritto, la chiamata parte solo quando la avvii tu.
-Puoi tornare alla Home di prima quando vuoi, dalle impostazioni del telefono.
-
-<b>SU OGNI TELEFONO</b>
-L'app riconosce marca e modello (Samsung, Xiaomi, Redmi, POCO, OPPO, realme, OnePlus, Motorola, Google Pixel, Nothing, Huawei, Honor…) e ti spiega passo passo la strada più semplice sul tuo.
+<b>ICONE, PER CHI VUOLE DI PIÙ</b>
+Icone oro su rosso per le app di tutti i giorni: telefono, messaggi, fotocamera, impostazioni e tante altre. Funzionano con Nova, Smart Launcher, Action Launcher, Lawnchair e, sui Samsung, con Theme Park.
 
 <b>PRIVACY</b>
-Gratuita, senza pubblicità e senza raccolta di dati. L'app non ha nemmeno l'accesso a Internet: tutto resta sul telefono. I contatti si leggono solo se crei la pagina dei Preferiti, e non escono mai dal telefono.
+Gratuita, senza pubblicità e senza raccolta di dati. L'app si collega a Internet solo per leggere il calendario delle partite dal sito del Club, e non invia nessun dato tuo.
 
 Fatta dai tifosi del Roma Club Matera «Francesco Totti», associazione di tifosi giallorossi di Matera dal 2012. Non è un'app di AS Roma e non è affiliata ad AS Roma S.p.A.
 

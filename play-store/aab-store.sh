@@ -28,4 +28,5 @@ done
 echo "sfondi nello Store: $(ls "$SFONDI" | wc -l)"
 
 cd "$QUI/app"
-flutter build appbundle --release -P firma=key-play.properties
+# sullo Store la versione leggera: sfondi e widget, senza la Home RCM
+flutter build appbundle --release -P firma=key-play.properties -P homeRcm=false --dart-define=HOME_RCM=false

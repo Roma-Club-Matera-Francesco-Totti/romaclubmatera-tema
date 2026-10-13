@@ -28,6 +28,10 @@ class Tema {
   /// La finestra di Android per scegliere Tema RCM come app Home.
   static Future<void> chiediHome() => _c.invokeMethod('chiediHome');
 
+  /// quale: "partita" o "orologio". false se il launcher non sa farlo da solo.
+  static Future<bool> aggiungiWidget(String quale) async =>
+      await _c.invokeMethod<bool>('aggiungiWidget', {'quale': quale}) ?? false;
+
   static Future<bool> apri(String url) async => await _c.invokeMethod<bool>('apri', {'url': url}) ?? false;
 }
 
